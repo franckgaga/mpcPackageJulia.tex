@@ -112,7 +112,7 @@ if run_benchmarks
 
     if benchmark_knitro
         optim = JuMP.Model(KNITRO.Optimizer, add_bridges=false)
-        set_attribute(optim, "algorithm", 4) # 4th algorithm is SQP
+        set_attribute(optim, "nlp_algorithm", 4) # 4th algorithm is SQP
         nmpc_knitro = NonLinMPC(estim; Hp, Hc, Mwt, Nwt, Cwt, optim)
         nmpc_knitro = setconstraint!(nmpc_knitro; umin, umax)
         JuMP.unset_time_limit_sec(nmpc_knitro.optim)
@@ -252,7 +252,7 @@ if run_benchmarks
 
     if benchmark_knitro
         optim = JuMP.Model(KNITRO.Optimizer, add_bridges=false)
-        set_attribute(optim, "algorithm", 4) # 4th algorithm is SQP
+        set_attribute(optim, "nlp_algorithm", 4) # 4th algorithm is SQP
         empc_knitro = NonLinMPC(estim2; Hp, Hc, Nwt, Mwt=Mwt2, Cwt, JE, Ewt, optim, p)
         empc_knitro = setconstraint!(empc_knitro; umin, umax)
         JuMP.unset_time_limit_sec(empc_knitro.optim)
