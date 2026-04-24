@@ -3,7 +3,15 @@
 
 \section{Methodology}
 
-The functions of this package dispatch over three abstract types, described hereafter.
+The functions of this package dispatch over three abstract types, described hereafter. The
+\cref{fig:control_topology} illustrates the main signals and the interactions between the different components of the controllers, in which the gray parts are features that are less commonly used, thus disabled by default. The following sections introduce the various mathematical symbols.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\columnwidth]{fig/control_topology.pdf}
+    \caption{Block diagram of the controllers in this package.}
+    \label{fig:control_topology}
+\end{figure}
 
 \paragraph{\textnormal{\texttt{SimModel}}} (2 subtypes) -- Discrete state-space models of the plant, including linear and nonlinear representations. Constructors automatically discretize continuous-time linear systems. Instances of \texttt{SimModel} serves as a wrapper to construct \texttt{StateEstimator} or \texttt{PredictiveController} objects, and also as plant simulators to test the designs.
 
@@ -33,7 +41,7 @@ Nonlinear state-space system of the plant described by ordinary differential equ
     \mathbf{y}(k)   &= \mathbf{h}\big( \mathbf{x}(k), \mathbf{d}(k), \mathbf{p} \big)
 \end{align}
 \end{subequations}
-with $\mathbf{p}$ encapsulating all the model parameters. It is worth mentioning that the state update $\mathbf{f}$ and output $\mathbf{h}$ functions must be in pure Julia to design nonlinear MPCs from them, since the implementation rely on the forward-mode automatic differentiation of \texttt{ForwardDiff.jl} \citep{forwardDiff}.
+with $\mathbf{p}$ encapsulating all the model parameters. It is worth mentioning that the state update $\mathbf{f}$ and output $\mathbf{h}$ functions must be in pure Julia to design nonlinear MPCs with an automatic differentiation backend, like the default \texttt{ForwardDiff.jl} backend \citep{forwardDiff}. The finite difference backends do not have this requirement.
 
 \subsection{State Estimators}
 
@@ -112,9 +120,9 @@ The problem is subject to the following constraints:
          &\le \mathbf{W} 
         &&\le \mathbf{W_{max}  + C_{w_{max}}}  \epsilon
 \end{alignat}
-and also $\epsilon \ge 0$. The last line is for custom linear inequality constraints, the vector $\mathbf{W}$ being defined as any linear combinations of the inputs, outputs and setpoints. Box constraints on the terminal states are also possible: 
+and also $\epsilon \ge 0$. The last line is for the custom linear inequality constraints. The vector $\mathbf{W}$ is defined as a linear combination of the inputs, outputs and setpoints. Box constraints on the terminal states are also possible: 
 \begin{equation}
-\mathbf{\hat{x}_{min}} {-} \mathbf{c_{\hat{x}_{min}}}\epsilon \le \mathbf{\hat{x}}_{i}(k{+}H_p) \le \mathbf{\hat{x}_{max}} + \mathbf{c_{\hat{x}_{max}}}\epsilon
+\mathbf{\hat{x}_{min}} - \mathbf{c_{\hat{x}_{min}}}\epsilon \le \mathbf{\hat{x}}_{i}(k+H_p) \le \mathbf{\hat{x}_{max}} + \mathbf{c_{\hat{x}_{max}}}\epsilon
 \end{equation}
 in which $i=k$ when using current estimators, and $i=k-1$ for delayed formulations. Note that time-varying constraints over the horizons and changing the bounds at runtime are supported (but not in the C codegen features at the time of writing).
 
@@ -138,14 +146,14 @@ with $J_{\mathit{MPC}}$ from \eqref{eq:J_MPC}. The user provides custom function
 \mathbf{U_e} = 
 \begin{bmatrix}
     \mathbf{U} \\ \mathbf{u}(k+H_p-1)
-\end{bmatrix}\!,\,
+\end{bmatrix},\,\,
 \mathbf{\hat{Y}_e} = 
 \begin{bmatrix}
     \mathbf{\hat{y}}(k) \\ \mathbf{\hat{Y}}
-\end{bmatrix}\!,\, 
+\end{bmatrix},\,\,
 \mathbf{\hat{D}_e} = 
 \begin{bmatrix}
     \mathbf{d}(k) \\ \mathbf{\hat{D}}
 \end{bmatrix} 
 \end{equation} 
-The bound constraints are identical to \texttt{LinMPC}. Custom nonlinear inequality constraints based on a user-defined function are not supported for now, but this feature will be added in the next release. The parameter $\mathbf{p}$ includes arbitrary constants for computing the economical costs. The default optimizer is \texttt{Ipopt.jl}, an open-source interior point method developed by \citet{ipopt}. The user has the choice between shooting methods, trapezoidal collocation, likewise MATLAB, and orthogonal collocation using Gauss-Radau or Gauss-Legendre quadrature, similarly to \citet{doMPC, gekko, acados}. Note that C code generation is not supported for this controller type at the time of writing.
+The bound constraints are identical to \texttt{LinMPC}. Custom nonlinear inequality constraints based on a user-defined function are not supported for now, but this feature will be added in the next release. The parameter $\mathbf{p}$ includes arbitrary constants for computing the economical costs. The default optimizer is \texttt{Ipopt.jl}, an open-source interior point method developed by \citet{ipopt}. The user has the choice between shooting methods, trapezoidal collocation, likewise MATLAB, and orthogonal collocation using Gauss-Radau or Gauss-Legendre quadrature, similarly to \citet{doMPC, gekko, acados}. They all support optional multi-threading, except for single shooting, which can be advantageous when the state-space functions are expensive to evaluate. Note that C code generation is not supported for this controller type at the time of writing.

@@ -1,7 +1,7 @@
 # ==========================================
 # ========== GLOBAL SETTINGS ===============
 # ==========================================
-run_benchmarks   = true
+run_benchmarks   = false
 benchmark_uno    = true 
 benchmark_madnlp = false
 
@@ -65,8 +65,8 @@ using JuMP; unset_time_limit_sec(nmpc.optim)
 
 ## =========================================
 x_0 = [0, 0]; x̂_0 = [0, 0, 0]; ry = [180]
-res_ry = sim!(nmpc, N, ry; plant, x_0, x̂_0)
-plot(res_ry)
+res_r = sim!(nmpc, N, ry; plant, x_0, x̂_0)
+plot(res_r)
 
 ## =========================================
 ## ========= Plot PDF ======================
@@ -74,7 +74,7 @@ plot(res_ry)
 using PlotThemes, Plots.PlotMeasures 
 theme(:default)
 default(fontfamily="Computer Modern")
-plt = plot(res_ry, size=(425, 200), bottom_margin=10px)
+plt = plot(res_r, size=(425, 200), bottom_margin=10px)
 display(plt)
 savefig(plt, "$(@__DIR__())/../../fig/plot_NonLinMPC2.pdf")
 
@@ -129,8 +129,8 @@ end
 
 ## =========================================
 x_0 = [π, 0]; x̂_0 = [π, 0, 0]; y_step = [10]
-res_yd = sim!(nmpc, N, [180.0]; plant, x_0, x̂_0, y_step)
-plot(res_yd)
+res_d = sim!(nmpc, N, [180.0]; plant, x_0, x̂_0, y_step)
+plot(res_d)
 
 ## =========================================
 ## ========= Plot PDF ======================
@@ -138,7 +138,7 @@ plot(res_yd)
 using PlotThemes, Plots.PlotMeasures
 theme(:default)
 default(fontfamily="Computer Modern")
-plt = plot(res_yd, size=(425, 200), bottom_margin=10px)
+plt = plot(res_d, size=(425, 200), bottom_margin=10px)
 display(plt)
 savefig(plt, "$(@__DIR__())/../../fig/plot_NonLinMPC3.pdf")
 
@@ -201,8 +201,8 @@ using JuMP; unset_time_limit_sec(empc.optim)
 
 ## =========================================
 x_0 = [0, 0]; x̂_0 = [0, 0, 0]; ry = [180; 0]
-res2_ry = sim!(empc, N, ry; plant=plant2, x_0, x̂_0)
-plot(res2_ry, ploty=[1])
+res2_r = sim!(empc, N, ry; plant=plant2, x_0, x̂_0)
+plot(res2_r, ploty=[1])
 
 ## =========================================
 ## ========= Plot PDF ======================
@@ -210,7 +210,7 @@ plot(res2_ry, ploty=[1])
 using PlotThemes, Plots.PlotMeasures 
 theme(:default)
 default(fontfamily="Computer Modern")
-plt = plot(res2_ry, ploty=[1], size=(425, 200), bottom_margin=10px)
+plt = plot(res2_r, ploty=[1], size=(425, 200), bottom_margin=10px)
 display(plt)
 savefig(plt, "$(@__DIR__())/../../fig/plot_EconomMPC1.pdf")
 
@@ -219,7 +219,7 @@ function calcW(res)
     τ, ω = res.U_data[1, 1:end-1], res.X_data[2, 1:end-1]
     return Ts*sum(τ.*ω)
 end
-display(Dict(:W_nmpc => calcW(res_ry), :W_empc => calcW(res2_ry)))
+display(Dict(:W_nmpc => calcW(res_r), :W_empc => calcW(res2_r)))
 
 ## =========================================
 ## ========= Benchmark =====================
@@ -270,11 +270,11 @@ end
 
 ## =========================================
 x_0 = [π, 0]; x̂_0 = [π, 0, 0]; y_step = [10; 0]
-res2_yd = sim!(empc, N, ry; plant=plant2, x_0, x̂_0, y_step)
-plot(res2_yd, ploty=[1])
+res2_d = sim!(empc, N, ry; plant=plant2, x_0, x̂_0, y_step)
+plot(res2_d, ploty=[1])
 
 ## =========================================
-display(Dict(:W_nmpc => calcW(res_yd), :W_empc => calcW(res2_yd)))
+display(Dict(:W_nmpc => calcW(res_d), :W_empc => calcW(res2_d)))
 
 ## =========================================
 ## ========= Plot PDF ======================
@@ -282,7 +282,7 @@ display(Dict(:W_nmpc => calcW(res_yd), :W_empc => calcW(res2_yd)))
 using PlotThemes, Plots.PlotMeasures
 theme(:default)
 default(fontfamily="Computer Modern")
-plt = plot(res2_yd, ploty=[1], size=(425, 200), bottom_margin=10px)
+plt = plot(res2_d, ploty=[1], size=(425, 200), bottom_margin=10px)
 display(plt)
 savefig(plt, "$(@__DIR__())/../../fig/plot_EconomMPC2.pdf")
 
@@ -352,8 +352,8 @@ end
 
 ## ==========================================
 x_0 = [0, 0]; x̂_0 = [0, 0, 0]; ry = [180]
-res3_ry = sim2!(mpc3, model, N, ry, plant, x_0, x̂_0, [0])
-plot(res3_ry)
+res3_r = sim2!(mpc3, model, N, ry, plant, x_0, x̂_0, [0])
+plot(res3_r)
 
 ## =========================================
 ## ========= Plot PDF ======================
@@ -361,7 +361,7 @@ plot(res3_ry)
 using PlotThemes, Plots.PlotMeasures 
 theme(:default)
 default(fontfamily="Computer Modern")
-plt = plot(res3_ry, size=(425, 200), bottom_margin=10px)
+plt = plot(res3_r, size=(425, 200), bottom_margin=10px)
 display(plt)
 savefig(plt, "$(@__DIR__())/../../fig/plot_SuccLinMPC1.pdf")
 
@@ -382,8 +382,8 @@ end
 
 ## =========================================
 x_0 = [π, 0]; x̂_0 = [π, 0, 0]; ry = [180]
-res3_yd = sim2!(mpc3, model, N, ry, plant, x_0, x̂_0, [10])
-plot(res3_yd)
+res3_d = sim2!(mpc3, model, N, ry, plant, x_0, x̂_0, [10])
+plot(res3_d)
 
 ## =========================================
 ## ========= Plot PDF ======================
@@ -391,7 +391,7 @@ plot(res3_yd)
 using PlotThemes, Plots.PlotMeasures 
 theme(:default)
 default(fontfamily="Computer Modern")
-plt = plot(res3_yd, size=(425, 200), bottom_margin=10px)
+plt = plot(res3_d, size=(425, 200), bottom_margin=10px)
 display(plt)
 savefig(plt, "$(@__DIR__())/../../fig/plot_SuccLinMPC2.pdf")
 

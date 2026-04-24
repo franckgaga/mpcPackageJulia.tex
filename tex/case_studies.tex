@@ -128,7 +128,7 @@ LinModel with a sample time Ts = 2.0 s:
   ├ 2 outputs y
   └ 1 measured disturbances d
 \end{minted}
-The simulation needs a new \texttt{LinMPC} instance based on \texttt{model\_d} and a new test function that explicitly employs the current disturbance measurement:
+The simulation requires a new \texttt{LinMPC} instance based on \texttt{model\_d} and a new test function that explicitly employs the current disturbance measurement:
 \begin{minted}{julia}
 mpc_d = setconstraint!(LinMPC(model_d), ymin=[45, -Inf])
 function test_mpc_d(mpc_d, plant)
@@ -216,11 +216,13 @@ The output function $\mathbf{h}$ converts the $\theta$ angle to degrees. The pla
 The state estimates of an \texttt{UnscentedKalmanFilter} will feed the controller:
 \begin{minted}{julia}
 σQ = [0.1, 1.0]; σR=[5.0]; nint_u=[1]; σQint_u=[0.1]
-estim = UnscentedKalmanFilter(model; σQ, σR, nint_u, σQint_u)
+estim = UnscentedKalmanFilter(model; σQ, σR, 
+                              nint_u, σQint_u)
 \end{minted}
 \spacerepl
 \begin{minted}{julia-repl}
-UnscentedKalmanFilter estimator with a sample time Ts = 0.1 s:
+UnscentedKalmanFilter estimator with a sample time Ts =
+0.1 s:
 ├ model: NonLinModel
 └ dimensions:
   ├ 1 manipulated inputs u (1 integrating states)
@@ -252,7 +254,8 @@ As the motor torque is limited to \num{-1.5} to \SI{1.5}{\newton\meter}, the inp
 \begin{minted}{julia}
 Hp, Hc, Mwt, Nwt, Cwt = 20, 2, [0.5], [2.5], Inf
 transcription = MultipleShooting()
-nmpc = NonLinMPC(estim; Hp, Hc, Mwt, Nwt, Cwt, transcription)
+nmpc = NonLinMPC(estim; Hp, Hc, Mwt, 
+                 Nwt, Cwt, transcription)
 umin, umax = [-1.5], [+1.5]
 nmpc = setconstraint!(nmpc; umin, umax)
 \end{minted}
@@ -264,8 +267,7 @@ NonLinMPC controller with a sample time Ts = 0.1 s:
 ├ optimizer: Ipopt 
 ├ transcription: MultipleShooting
 ├ gradient: AutoForwardDiff
-├ jacobian: AutoSparse (AutoForwardDiff, TracerSparsityDetector, 
-                                         GreedyColoringAlgorithm)
+├ jacobian: AutoSparse (AutoForwardDiff, TracerSparsity...
 ├ hessian: nothing
 └ dimensions:
   ├ 20 prediction steps Hp
@@ -277,13 +279,15 @@ NonLinMPC controller with a sample time Ts = 0.1 s:
   ├  0 unmeasured outputs yu
   └  0 measured disturbances d
 \end{minted}
-The keyword arguments \texttt{Mwt} and \texttt{Nwt} are the output setpoint tracking and move suppression weights, respectively. The option \texttt{Cwt=Inf} disables the slack variable $\epsilon$ when not needed. 
+The keyword arguments \texttt{Mwt} and \texttt{Nwt} are the output setpoint tracking and move suppression weights, respectively. The option \texttt{Cwt=Inf} disables the slack variable $\epsilon$ when not needed. The transcription is set to \texttt{MultipleShooting} to
+ease convergence on the highly nonlinear and unstable pendulum model, but also to reproduce
+MATLAB's internals for nonlinear MPC, which is harded-coded as a multiple shooting.
 
 An angular setpoint of \SI{180}{\degree} (inverted position) tests \texttt{mpc} performances on the plant:
 \begin{minted}{julia}
 x_0 = [0, 0]; x̂_0 = [0, 0, 0]; ry = [180]
-res_ry = sim!(nmpc, N, ry; plant, x_0, x̂_0)
-plot(res_ry)
+res_r = sim!(nmpc, N, ry; plant, x_0, x̂_0)
+plot(res_r)
 \end{minted}
 
 \begin{figure}[ht]
@@ -297,8 +301,8 @@ The result in \cref{fig:plot_NonLinMPC2} suggests that the controller is robust 
 Starting from this inverted position, \cref{fig:plot_NonLinMPC3} shows the closed-loop response to a step disturbances of \SI{10}{\degree} is satisfactory:
 \begin{minted}{julia}
 x_0 = [π, 0]; x̂_0 = [π, 0, 0]; y_step = [10]
-res_yd = sim!(nmpc, N, [180.0]; plant, x_0, x̂_0, y_step)
-plot(res_yd)
+res_d = sim!(nmpc, N, [180.0]; plant, x_0, x̂_0, y_step)
+plot(res_d)
 \end{minted}
 
 \begin{figure}[ht]
@@ -356,8 +360,7 @@ NonLinMPC controller with a sample time Ts = 0.1 s:
 ├ optimizer: Ipopt 
 ├ transcription: MultipleShooting
 ├ gradient: AutoForwardDiff
-├ jacobian: AutoSparse (AutoForwardDiff, TracerSparsityDetector, 
-                                         GreedyColoringAlgorithm)
+├ jacobian: AutoSparse (AutoForwardDiff, TracerSparsity...
 ├ hessian: nothing
 └ dimensions:
   ├ 20 prediction steps Hp
@@ -373,8 +376,8 @@ NonLinMPC controller with a sample time Ts = 0.1 s:
 The keyword argument \texttt{Ewt} is the $E$ weight in \eqref{eq:J_NMPC}. The economic term must be large enough to be significant but a too high value can lead to a static error on the angle setpoint. The second element of \texttt{Mwt2} is zero since the speed $\omega$ is not requested to track a setpoint. \cref{fig:plot_EconomMPC1} shows that closed-loop response to a \SI{180}{\degree} setpoint is similar:
 \begin{minted}{julia}
 x_0 = [0, 0]; x̂_0 = [0, 0, 0]; ry = [180; 0]
-res2_ry = sim!(empc, N, ry; plant=plant2, x_0, x̂_0)
-plot(res2_ry, ploty=[1])
+res2_r = sim!(empc, N, ry; plant=plant2, x_0, x̂_0)
+plot(res2_r, ploty=[1])
 \end{minted}
 
 \begin{figure}[h]
@@ -389,7 +392,7 @@ function calcW(res)
     τ, ω = res.U_data[1, 1:end-1], res.X_data[2, 1:end-1]
     return Ts*sum(τ.*ω)
 end
-Dict(:W_nmpc => calcW(res_ry), :W_empc => calcW(res2_ry))
+Dict(:W_nmpc => calcW(res_r), :W_empc => calcW(res2_r))
 \end{minted}
 \spacerepl\vspace{1pt}
 \begin{minted}{julia-repl}
@@ -401,8 +404,8 @@ Dict{Symbol, Float64} with 2 entries:
 \noindent Also, for a \SI{10}{\degree} step disturbance (results depicted in \cref{fig:plot_EconomMPC2}):
 \begin{minted}{julia}
 x_0 = [π, 0]; x̂_0 = [π, 0, 0]; y_step = [10; 0]
-res2_yd = sim!(empc, N, ry; plant=plant2, x_0, x̂_0, y_step)
-plot(res2_yd, ploty=[1])
+res2_d = sim!(empc, N, ry; plant=plant2, x_0, x̂_0, y_step)
+plot(res2_d, ploty=[1])
 \end{minted}
 
 \begin{figure}[h]
@@ -413,7 +416,7 @@ plot(res2_yd, ploty=[1])
 
 \noindent the new controller is able to recuperate a little more energy from the pendulum (i.e. negative work):
 \begin{minted}{julia}
-Dict(:W_nmpc => calcW(res_yd), :W_empc => calcW(res2_yd))
+Dict(:W_nmpc => calcW(res_d), :W_empc => calcW(res2_d))
 \end{minted}
 \spacerepl
 \begin{minted}{julia-repl}
@@ -426,7 +429,7 @@ Of course, this gain is only exploitable if the motor electronic includes some k
 \subsubsection{Successive Linearization Model Predictive Control (SLMPC)}
 \label{sec:successive_linearization}
 
-The \texttt{setmodel!} method allows online adaptation of a linear plant model. Combined with the automatic linearization of \texttt{linearize}, based on \texttt{ForwardDiff.jl}, a successive linearization MPC can be designed with minimal efforts. But first, the default \texttt{LinMPC} solver (\texttt{OSQP.jl}) does not perform as well as \texttt{DAQP.jl} on unstable plants like here \citep{daqp}. The syntax to install it is: 
+The \texttt{setmodel!} method allows online adaptation of a linear plant model. Combined with the automatic linearization of \texttt{linearize}, based on \texttt{ForwardDiff.jl} by default, a successive linearization MPC can be designed with minimal efforts. But first, the default \texttt{LinMPC} optimizer (\texttt{OSQP.jl}) does not perform as well as \texttt{DAQP.jl} on unstable plants like here \citep{daqp}. The syntax to install it is: 
 \begin{minted}{julia}
 using Pkg; Pkg.add(["JuMP","DAQP"])
 using JuMP, DAQP
@@ -481,8 +484,8 @@ end
 The new model is set after solving the optimization problem, and before updating the state estimate, that is, when both $\mathbf{u}(k)$ and $\mathbf{\hat{x}}_k(k)$ are available as the new operating point. As shown in \cref{fig:plot_SuccLinMPC1} and \ref{fig:plot_SuccLinMPC2}, the SLMPC closed-loop response is similar to the nonlinear MPC, both for the 180° setpoint:
 \begin{minted}{julia}
 x_0 = [0, 0]; x̂_0 = [0, 0, 0]; ry = [180]
-res3_ry = sim2!(mpc3, model, N, ry, plant, x_0, x̂_0, [0])
-plot(res3_ry)
+res3_r = sim2!(mpc3, model, N, ry, plant, x_0, x̂_0, [0])
+plot(res3_r)
 \end{minted}
 
 \begin{figure}[h]
@@ -494,8 +497,8 @@ plot(res3_ry)
 \noindent and the 10° step disturbance:
 \begin{minted}{julia}
 x_0 = [π, 0]; x̂_0 = [π, 0, 0]; ry = [180]
-res3_yd = sim2!(mpc3, model, N, ry, plant, x_0, x̂_0, [10])
-plot(res3_yd)
+res3_d = sim2!(mpc3, model, N, ry, plant, x_0, x̂_0, [10])
+plot(res3_d)
 \end{minted}
 
 \begin{figure}[h]
