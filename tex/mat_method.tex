@@ -26,7 +26,7 @@ Linear state-space representations of the plant. Continuous-time models are disc
 in which the vectors $\mathbf{u}$, $\mathbf{d}$, $\mathbf{x}$ and $\mathbf{y}$ are the manipulated input, measured disturbance, state and output of the model, respectively. Objects are constructed with \texttt{ss} or \texttt{tf} functions from \texttt{ControlSystems.jl}, or by providing the fives state-space matrices directly. All the \texttt{StateEstimator} and \texttt{PredictiveController} objects based on a \texttt{LinModel} representation allow online model modifications (see the \cref{sec:successive_linearization} for an example with successive linearizations).
 
 \paragraph{\textnormal{\texttt{NonLinModel}}}
-Nonlinear state-space descriptions of the plant. A built-in 4th order Runge-Kutta solver with optional supersampling discretizes continuous-time dynamics by default, leading to the following system of equations:
+Nonlinear state-space system of the plant described by ordinary differential equations. Differential and algebraic equation systems are not supported yet, but they are planned. A built-in 4th order Runge-Kutta solver with optional supersampling discretizes continuous-time dynamics by default, leading to the following system of equations:
 \begin{subequations}
 \begin{align}
     \mathbf{x}(k+1) &= \mathbf{f}\big(\mathbf{x}(k), \mathbf{u}(k), \mathbf{d}(k), \mathbf{p} \big) \\
@@ -53,10 +53,10 @@ Time-varying formulation of the Kalman filter. It can evaluate the estimation er
 Deterministic state observer based on eigenvalue placement in closed-loop. It pre-computes the observer gain with \texttt{place} function from \texttt{ControlSystems.jl}, that implements the method of \citet{placePoles}.
 
 \paragraph{\textnormal{\texttt{UnscentedKalmanFilter}}}
-A Kalman filter for nonlinear systems relying on the generalized unscented transform \citep{simon}. It propagates the mean and covariance of the noise by approximating the state probability distribution instead of linearizing the plant model like in the \texttt{ExtendedKalmanFilter}. This is the default state estimator for controllers based on \texttt{NonLinModel} objects.
+Kalman filter for nonlinear systems relying on the generalized unscented transform \citep{simon}. It propagates the mean and covariance of the noise by approximating the state probability distribution instead of linearizing the plant model like in the \texttt{ExtendedKalmanFilter}. This is the default state estimator for controllers based on \texttt{NonLinModel} objects.
 
 \paragraph{\textnormal{\texttt{ExtendedKalmanFilter}}}
-Extension of \texttt{KalmanFilter} for nonlinear models. The Jacobians of the nonlinear state-space functions approximate the propagation of the noise. These matrices are automatically computed by forward mode automatic differentiation.
+An extension of \texttt{KalmanFilter} for nonlinear models. The Jacobians of the nonlinear state-space functions approximate the propagation of the noise. These matrices are automatically computed by forward mode automatic differentiation.
 
 \paragraph{\textnormal{\texttt{MovingHorizonEstimator}}}
 Also known as receding horizon estimation. It minimizes at each discrete time $k$ the following cost function over an estimation window of $N_k = \min(k+1, H_e)$ steps, where $H_e$ is the estimation horizon:
@@ -74,7 +74,7 @@ This approach allows incorporating additional physical information on the proces
     \mathbf{\hat{W}_{min} - C_{\hat{w}_{min}}} \varepsilon &\le \mathbf{\hat{W}} &&\le \mathbf{\hat{W}_{max} + C_{\hat{w}_{max}}} \varepsilon \\
     \mathbf{\hat{V}_{min} - C_{\hat{v}_{min}}} \varepsilon &\le \mathbf{\hat{V}} &&\le \mathbf{\hat{V}_{max} + C_{\hat{v}_{max}}} \varepsilon
 \end{alignat}
-and also $\varepsilon \ge 0$. The $\mathbf{\hat{X}}$ vector gathers the state estimates over the window. The $\mathbf{C}$ vectors are non-negative values that specify the softness of the associated bound, and $C$ globally weights the slack $\varepsilon$ (equal concern for relaxation). The problem \eqref{eq:J_MHE} is treated as a quadratic program for \texttt{LinModel}, and a nonlinear optimization, for \texttt{NonLinModel}.
+and also $\varepsilon \ge 0$. The $\mathbf{\hat{X}}$ vector gathers the state estimates over the window. The $\mathbf{C}$ vectors are non-negative values that specify the softness of the associated bound, and $C$ globally weights the slack $\varepsilon$ (equal concern for relaxation). The problem \eqref{eq:J_MHE} is treated as a quadratic program for \texttt{LinModel}, and a nonlinear optimization, for \texttt{NonLinModel}. The optimal estimation problem is hard-coded as a single shooting formulation for now, but other transcription methods are planned for future releases.
 
 \paragraph{\textnormal{\texttt{InternalModel}}}
 Allows predictive control designs based on an internal model structure. It is based on the general approach of \citet{globPC}. The stochastic model of the unmeasured disturbances defaults to integrating white noise for each measured output (customizable). This is the equivalent of assuming that the disturbances are constant over the prediction horizon, similarly to dynamic matrix control (DMC). It supports asymptotically stable \texttt{LinModel} or \texttt{NonLinModel}.
@@ -127,25 +127,25 @@ Linear model predictive controller without constraints, see \texttt{LinMPC} for 
 Nonlinear model predictive controller under constraints. The objective function includes an additional term for economic MPC:
 \begin{equation}\label{eq:J_NMPC}
 J_{\mathit{NMPC}} = J_{\mathit{MPC}} 
-    + E J_E\big(\mathbf{U}_E, \mathbf{\hat{Y}}_E, \mathbf{\hat{D}}_E, \mathbf{p}, \epsilon \big)
+    + E J_E\big(\mathbf{U_e}, \mathbf{\hat{Y}_e}, \mathbf{\hat{D}_e}, \mathbf{p}, \epsilon \big)
 \end{equation}
 subject the custom nonlinear inequality constraints:
 \begin{equation}
-\mathbf{g_c}\big(\mathbf{U}_E, \mathbf{\hat{Y}}_E, \mathbf{\hat{D}}_E, \mathbf{p}, \epsilon \big) \le \mathbf{0}
+\mathbf{g_c}\big(\mathbf{U_e}, \mathbf{\hat{Y}_e}, \mathbf{\hat{D}_e}, \mathbf{p}, \epsilon \big) \le \mathbf{0}
 \end{equation}
-with $J_{\mathit{MPC}}$ from \eqref{eq:J_MPC}. The user provides custom functions $J_E$ and $\mathbf{g_c}$ that returns the economic costs and the constraint values for a given set of inputs $\mathbf{U}_E$, outputs $\mathbf{\hat{Y}}_E$ and measured disturbances $\mathbf{\hat{D}}_E$:
+with $J_{\mathit{MPC}}$ from \eqref{eq:J_MPC}. The user provides custom functions $J_E$ and $\mathbf{g_c}$ that returns the economic costs and the constraint values for a given set of inputs $\mathbf{U_e}$, outputs $\mathbf{\hat{Y}_e}$ and measured disturbances $\mathbf{\hat{D}_e}$, extended from $k$ to $k+H_p$ inclusively as follows:
 \begin{equation}
-\mathbf{U}_E = 
+\mathbf{U_e} = 
 \begin{bmatrix}
     \mathbf{U} \\ \mathbf{u}(k+H_p-1)
 \end{bmatrix}\!,\,
-\mathbf{\hat{Y}}_E = 
+\mathbf{\hat{Y}_e} = 
 \begin{bmatrix}
     \mathbf{\hat{y}}(k) \\ \mathbf{\hat{Y}}
 \end{bmatrix}\!,\, 
-\mathbf{\hat{D}}_E = 
+\mathbf{\hat{D}_e} = 
 \begin{bmatrix}
     \mathbf{d}(k) \\ \mathbf{\hat{D}}
 \end{bmatrix} 
 \end{equation} 
-The bound constraints are identical to \texttt{LinMPC}. Custom nonlinear inequality constraints based on a user-defined function are not supported for now, but this feature will be added in the next release. The parameter $\mathbf{p}$ includes arbitrary constants for computing the economical costs. The default optimizer is \texttt{Ipopt.jl}, an open-source interior point method developed by \citet{ipopt}. The user has the choice between shooting methods, trapezoidal collocation, likewise MATLAB, and orthogonal collocation based on a Gauss-Lobatto or Gauss-Radau quadrature, similarly to \citet{doMPC, gekko, acados}. Note that C code generation is not supported for this controller type at the time of writing.
+The bound constraints are identical to \texttt{LinMPC}. Custom nonlinear inequality constraints based on a user-defined function are not supported for now, but this feature will be added in the next release. The parameter $\mathbf{p}$ includes arbitrary constants for computing the economical costs. The default optimizer is \texttt{Ipopt.jl}, an open-source interior point method developed by \citet{ipopt}. The user has the choice between shooting methods, trapezoidal collocation, likewise MATLAB, and orthogonal collocation using Gauss-Radau or Gauss-Legendre quadrature, similarly to \citet{doMPC, gekko, acados}. Note that C code generation is not supported for this controller type at the time of writing.

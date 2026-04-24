@@ -159,7 +159,7 @@ plot(res)
     \caption{CSTR closed-loop simulation with feedforward (MPC).}\label{fig:plot_LinMPC2}
 \end{figure}
 
-\cref{fig:plot_LinMPC2} shows that the feedforward compensation handles the disturbance without violating the constraint. Note that measured disturbances are assumed constant in the future by default but custom $\mathbf{\hat{D}}$ predictions are possible. The same applies for the setpoints $\mathbf{\hat{R}_y}$ and $\mathbf{\hat{R}_u}$. For instance, the stochastic predictions of an \texttt{InternalModel} could generate these two vectors.
+\cref{fig:plot_LinMPC2} shows that the feedforward compensation handles the disturbance without violating the constraint. Note that measured disturbances are assumed constant in the future by default but custom $\mathbf{\hat{D}}$ predictions are possible. The same applies for the setpoints $\mathbf{\hat{R}_y}$ and $\mathbf{\hat{R}_u}$. For instance, the stochastic predictions of an \texttt{InternalModel} object could generate these two vectors.
 
 \subsection{Nonlinear Design : Inverted Pendulum}
 \label{sec.nonlinear_design}
@@ -517,22 +517,22 @@ The MATLAB implementations use the model predictive control toolbox. Additional 
 
 Since the performance is solver-dependent, multiple optimization algorithms are tested. The results include four types of quadratic/nonlinear solvers. The operator-splitting (OS) methods are: 
 \begin{itemize}
-    \item \texttt{OSQP.jl} package in Julia \citep{osqp}
+    \item \texttt{OSQP} package in Julia \citep{osqp}
     \item \texttt{admm} configuration in MATLAB \citep{admm}
 \end{itemize}
 For active-set (AS) methods, the optimizers are: 
 \begin{itemize}
-    \item \texttt{DAQP.jl} package in Julia \citep{daqp}
+    \item \texttt{DAQP} package in Julia \citep{daqp}
     \item \texttt{active-set} configuration in MATLAB \citep{activeset}
 \end{itemize}
 For interior-point (IP) methods, the solvers are: 
 \begin{itemize}
-    \item \texttt{Ipopt.jl} package in Julia \citep{ipopt}
+    \item \texttt{Ipopt} package in Julia \citep{ipopt}
     \item \texttt{interior-point} configuration in MATLAB \citep{interiorpoint}
 \end{itemize}
 And, lastly, the sequential quadratic (SQ) methods are:
 \begin{itemize}
-    \item \texttt{UnoSolver.jl} package in Julia with \texttt{filtersqp} and a line search globalization mechanism \citep{uno}
+    \item \texttt{UnoSolver} package in Julia with \texttt{filtersqp} and a line search globalization mechanism \citep{uno}
     \item \texttt{sqp} configuration in MATLAB \citep{sqp}
 \end{itemize}
 

@@ -3,10 +3,9 @@
 % !LW recipe=latexmk (latexmkrc)
 \documentclass[5p,authoryear]{elsarticle}
 
-\usepackage{amsmath,amssymb,mathtools,textgreek,siunitx,etoolbox} 
+\usepackage{amsmath,amssymb,mathtools,siunitx,etoolbox} 
 \usepackage{graphicx,enumitem,xcolor,booktabs,tikz,chemplants,natbib}
 \usepackage[scale=0.8]{noto-mono}
-
 \usepackage[cachedir=minted-cache]{minted}
 \usepackage[colorlinks,allcolors=blue]{hyperref}
 \usepackage[capitalize]{cleveref}
@@ -64,9 +63,10 @@ Advanced Process Control \sep State Estimation \sep Kalman Filter \sep Moving Ho
 \input{tex/conclu}
 %
 \section*{Acknowledgments}
-The authors would like to acknowledge all the developers involved in the control system and optimization frameworks of Julia. Their ease of use and intuitiveness  significantly accelerated the programming of this package. 
+The authors would like to acknowledge all the developers involved in the control system, automatic differentiation and optimization frameworks of Julia. Their ease of use and intuitiveness  significantly accelerated the programming of this package. 
 
 \bibliographystyle{elsarticle-harv}
+\renewcommand{\bibfont}{\small}
 \bibliography{mpcPackageJulia_bibfile} 
 
 \end{document}
