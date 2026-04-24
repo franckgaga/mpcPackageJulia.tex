@@ -2,7 +2,7 @@
 # ========== GLOBAL SETTINGS ===============
 # ==========================================
 run_benchmarks   = true
-benchmark_knitro = true # put false if no KNITRO license:
+benchmark_uno    = true 
 benchmark_madnlp = false
 
 # ==========================================
@@ -55,7 +55,8 @@ savefig(plt, "$(@__DIR__())/../../fig/plot_NonLinMPC1.pdf")
 
 ## =========================================
 Hp, Hc, Mwt, Nwt, Cwt = 20, 2, [0.5], [2.5], Inf
-nmpc = NonLinMPC(estim; Hp, Hc, Mwt, Nwt, Cwt)
+transcription = MultipleShooting()
+nmpc = NonLinMPC(estim; Hp, Hc, Mwt, Nwt, Cwt, transcription)
 umin, umax = [-1.5], [+1.5]
 nmpc = setconstraint!(nmpc; umin, umax)
 
@@ -81,17 +82,17 @@ savefig(plt, "$(@__DIR__())/../../fig/plot_NonLinMPC2.pdf")
 ## ========= Benchmark =====================
 ## =========================================
 using BenchmarkTools
-using JuMP, Ipopt, KNITRO
+using JuMP, Ipopt, UnoSolver
 
 using MadNLP
 
 if run_benchmarks
     optim = JuMP.Model(Ipopt.Optimizer, add_bridges=false)
-    nmpc_ipopt = NonLinMPC(estim; Hp, Hc, Mwt, Nwt, Cwt, optim)
+    nmpc_ipopt = NonLinMPC(estim; Hp, Hc, Mwt, Nwt, Cwt, optim, transcription)
     nmpc_ipopt = setconstraint!(nmpc_ipopt; umin, umax)
     JuMP.unset_time_limit_sec(nmpc_ipopt.optim)
     bm = @benchmark(
-            sim!($nmpc_ipopt, $N, $ry; plant=$plant, x_0=$x_0, x̂_0=$x̂_0),
+            sim!($nmpc_ipopt, $N, $ry; plant=$plant, x_0=$x_0, x̂_0=$x̂_0, progress=false),
             samples=50, 
             seconds=10*60
         )
@@ -99,25 +100,26 @@ if run_benchmarks
 
     if benchmark_madnlp
         optim = JuMP.Model(MadNLP.Optimizer, add_bridges=false)
-        nmpc_madnlp = NonLinMPC(estim; Hp, Hc, Mwt, Nwt, Cwt, optim)
+        nmpc_madnlp = NonLinMPC(estim; Hp, Hc, Mwt, Nwt, Cwt, optim, transcription)
         nmpc_madnlp = setconstraint!(nmpc_madnlp; umin, umax)
         JuMP.unset_time_limit_sec(nmpc_madnlp.optim)
         bm = @benchmark(
-            sim!($nmpc_madnlp, $N, $ry; plant=$plant, x_0=$x_0, x̂_0=$x̂_0),
+            sim!($nmpc_madnlp, $N, $ry; plant=$plant, x_0=$x_0, x̂_0=$x̂_0, progress=false),
             samples=50, 
             seconds=10*60
         )
         @show btime_NMPC_track_solver_IP2 = median(bm)
     end
 
-    if benchmark_knitro
-        optim = JuMP.Model(KNITRO.Optimizer, add_bridges=false)
-        set_attribute(optim, "nlp_algorithm", 4) # 4th algorithm is SQP
-        nmpc_knitro = NonLinMPC(estim; Hp, Hc, Mwt, Nwt, Cwt, optim)
-        nmpc_knitro = setconstraint!(nmpc_knitro; umin, umax)
-        JuMP.unset_time_limit_sec(nmpc_knitro.optim)
+    if benchmark_uno
+        optim = Model(UnoSolver.Optimizer, add_bridges=false)
+        set_attribute(optim, "preset", "funnelsqp")
+        set_attribute(optim, "globalization_mechanism", "LS") 
+        nmpc_uno = NonLinMPC(estim; Hp, Hc, Mwt, Nwt, Cwt, optim, transcription)
+        nmpc_uno = setconstraint!(nmpc_uno; umin, umax)
+        JuMP.unset_time_limit_sec(nmpc_uno.optim)
         bm = @benchmark(
-                sim!($nmpc_knitro, $N, $ry; plant=$plant, x_0=$x_0, x̂_0=$x̂_0),
+                sim!($nmpc_uno, $N, $ry; plant=$plant, x_0=$x_0, x̂_0=$x̂_0, progress=false),
                 samples=50,
                 seconds=10*60
             )
@@ -145,7 +147,7 @@ savefig(plt, "$(@__DIR__())/../../fig/plot_NonLinMPC3.pdf")
 ## =========================================
 if run_benchmarks
     bm = @benchmark(
-            sim!($nmpc_ipopt, $N, $[180.0]; plant=$plant, x_0=$x_0, x̂_0=$x̂_0, y_step=$y_step),
+            sim!($nmpc_ipopt, $N, $[180.0]; plant=$plant, x_0=$x_0, x̂_0=$x̂_0, y_step=$y_step, progress=false),
             samples=50,
             seconds=10*60
         )
@@ -153,16 +155,16 @@ if run_benchmarks
 
     if benchmark_madnlp
         bm = @benchmark(
-            sim!($nmpc_madnlp, $N, $[180.0]; plant=$plant, x_0=$x_0, x̂_0=$x̂_0, y_step=$y_step),
+            sim!($nmpc_madnlp, $N, $[180.0]; plant=$plant, x_0=$x_0, x̂_0=$x̂_0, y_step=$y_step, progress=false),
             samples=50,
             seconds=10*60
         )
         @show btime_NMPC_regul_solver_IP2 = median(bm)
     end
 
-    if benchmark_knitro
+    if benchmark_uno
         bm = @benchmark(
-                sim!($nmpc_knitro, $N, $[180.0]; plant=$plant, x_0=$x_0, x̂_0=$x̂_0, y_step=$y_step),
+                sim!($nmpc_uno, $N, $[180.0]; plant=$plant, x_0=$x_0, x̂_0=$x̂_0, y_step=$y_step, progress=false),
                 samples=50,
                 seconds=10*60
             )
@@ -184,14 +186,14 @@ estim2 = UnscentedKalmanFilter(model2; σQ, σR,
 
 
 ## =========================================
-function JE(UE, ŶE, _ , p)
+function JE(UE, ŶE, _ , p , _ )
     Ts = p
     τ, ω = UE[1:end-1], ŶE[2:2:end-1]
     return Ts*sum(τ.*ω)
 end
 p = Ts; Mwt2 = [Mwt; 0.0]; Ewt = 3.5e3
-empc = NonLinMPC(estim2; Hp, Hc, 
-                 Nwt, Mwt=Mwt2, Cwt, JE, Ewt, p)
+empc = NonLinMPC(estim2; Hp, Hc, Mwt=Mwt2, 
+                 Nwt, Cwt, JE, Ewt, p, transcription)
 empc = setconstraint!(empc; umin, umax)
 
 ## =========================================
@@ -223,15 +225,15 @@ display(Dict(:W_nmpc => calcW(res_ry), :W_empc => calcW(res2_ry)))
 ## ========= Benchmark =====================
 ## =========================================
 using BenchmarkTools
-using JuMP, Ipopt, KNITRO
+using JuMP, Ipopt, UnoSolver
 
 if run_benchmarks
     optim = JuMP.Model(Ipopt.Optimizer, add_bridges=false)
-    empc_ipopt = NonLinMPC(estim2; Hp, Hc, Nwt, Mwt=Mwt2, Cwt, JE, Ewt, optim, p)
+    empc_ipopt = NonLinMPC(estim2; Hp, Hc, Nwt, Mwt=Mwt2, Cwt, JE, Ewt, optim, p, transcription)
     empc_ipopt = setconstraint!(empc_ipopt; umin, umax)
     JuMP.unset_time_limit_sec(empc_ipopt.optim)
     bm = @benchmark(
-            sim!($empc_ipopt, $N, $ry; plant=$plant2, x_0=$x_0, x̂_0=$x̂_0),
+            sim!($empc_ipopt, $N, $ry; plant=$plant2, x_0=$x_0, x̂_0=$x̂_0, progress=false),
             samples=50, 
             seconds=10*60
         )
@@ -239,25 +241,26 @@ if run_benchmarks
 
     if benchmark_madnlp
         optim = JuMP.Model(MadNLP.Optimizer, add_bridges=false)
-        empc_madnlp = NonLinMPC(estim2; Hp, Hc, Nwt, Mwt=Mwt2, Cwt, JE, Ewt, optim, p)
+        empc_madnlp = NonLinMPC(estim2; Hp, Hc, Nwt, Mwt=Mwt2, Cwt, JE, Ewt, optim, p, transcription)
         empc_madnlp = setconstraint!(empc_madnlp; umin, umax)
         JuMP.unset_time_limit_sec(empc_madnlp.optim)
         bm = @benchmark(
-                sim!($empc_madnlp, $N, $ry; plant=$plant2, x_0=$x_0, x̂_0=$x̂_0),
+                sim!($empc_madnlp, $N, $ry; plant=$plant2, x_0=$x_0, x̂_0=$x̂_0, progress=false),
                 samples=50, 
                 seconds=10*60
             )
         @show btime_EMPC_track_solver_IP2 = median(bm)
     end
 
-    if benchmark_knitro
-        optim = JuMP.Model(KNITRO.Optimizer, add_bridges=false)
-        set_attribute(optim, "nlp_algorithm", 4) # 4th algorithm is SQP
-        empc_knitro = NonLinMPC(estim2; Hp, Hc, Nwt, Mwt=Mwt2, Cwt, JE, Ewt, optim, p)
-        empc_knitro = setconstraint!(empc_knitro; umin, umax)
-        JuMP.unset_time_limit_sec(empc_knitro.optim)
+    if benchmark_uno
+        optim = Model(UnoSolver.Optimizer, add_bridges=false)
+        set_attribute(optim, "preset", "funnelsqp")
+        set_attribute(optim, "globalization_mechanism", "LS") 
+        empc_uno = NonLinMPC(estim2; Hp, Hc, Nwt, Mwt=Mwt2, Cwt, JE, Ewt, optim, p, transcription)
+        empc_uno = setconstraint!(empc_uno; umin, umax)
+        JuMP.unset_time_limit_sec(empc_uno.optim)
         bm = @benchmark(
-                sim!($empc_knitro, $N, $ry; plant=$plant2, x_0=$x_0, x̂_0=$x̂_0),
+                sim!($empc_uno, $N, $ry; plant=$plant2, x_0=$x_0, x̂_0=$x̂_0, progress=false),
                 samples=50,
                 seconds=10*60
             )
@@ -289,7 +292,7 @@ savefig(plt, "$(@__DIR__())/../../fig/plot_EconomMPC2.pdf")
 ## =========================================
 if run_benchmarks
     bm = @benchmark(
-            sim!($empc_ipopt, $N, $ry; plant=$plant2, x_0=$x_0, x̂_0=$x̂_0, y_step=$y_step),
+            sim!($empc_ipopt, $N, $ry; plant=$plant2, x_0=$x_0, x̂_0=$x̂_0, y_step=$y_step, progress=false),
             samples=50,
             seconds=10*60
         )
@@ -297,16 +300,16 @@ if run_benchmarks
 
     if benchmark_madnlp
         bm = @benchmark(
-            sim!($empc_madnlp, $N, $ry; plant=$plant2, x_0=$x_0, x̂_0=$x̂_0, y_step=$y_step),
+            sim!($empc_madnlp, $N, $ry; plant=$plant2, x_0=$x_0, x̂_0=$x̂_0, y_step=$y_step, progress=false),
             samples=50,
             seconds=10*60
         )
         @show btime_EMPC_regul_solver_IP2 = median(bm)
     end
 
-    if benchmark_knitro
+    if benchmark_uno
         bm = @benchmark(
-                sim!($empc_knitro, $N, $ry; plant=$plant2, x_0=$x_0, x̂_0=$x̂_0, y_step=$y_step),
+                sim!($empc_uno, $N, $ry; plant=$plant2, x_0=$x_0, x̂_0=$x̂_0, y_step=$y_step, progress=false),
                 samples=50,
                 seconds=10*60
             )

@@ -1,6 +1,6 @@
 % Executed on:
-% MATLAB Version: 24.1.0.2603908 (R2024a) Update 4
-% Operating System: Linux 6.17.4
+% MATLAB Version: 24.1.0.3050227 (R2024a) Update 8
+% Operating System: Linux 6.17.0
 
 Ts = 0.1;
 par = [9.8; 0.4; 1.2; 0.3];
@@ -123,7 +123,6 @@ function [R, Y, Yhat, U, X, Xhat] = test_mpc(mympc, opt, ukf, ...
         U(:, i) = u;
         X(:, i) = x;
         Xhat(:, i) = xhat;
-        correct(ukf, y, u, par, Ts);
         predict(ukf, u, par, Ts);
         x = f(x, u, par_plant, Ts);
     end
