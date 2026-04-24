@@ -1,7 +1,7 @@
 # ==========================================
 # ========== GLOBAL SETTINGS ===============
 # ==========================================
-run_benchmarks   = false
+run_benchmarks   = true
 benchmark_uno    = true 
 benchmark_madnlp = false
 
