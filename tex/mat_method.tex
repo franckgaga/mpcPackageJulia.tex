@@ -4,11 +4,11 @@
 \section{Methodology}
 
 The functions of this package dispatch over three abstract types, described hereafter. The
-\cref{fig:control_topology} illustrates the main signals and the interactions between the different components of the controllers, in which the gray parts are features that are less commonly used, thus disabled by default. The following sections introduce the various mathematical symbols.
+\cref{fig:control_topology} illustrates the main signals and the interactions between the different components of the controllers. The gray parts are features that are less commonly used, thus disabled by default. The following sections introduce the various mathematical symbols depicted in the figure.
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=\columnwidth]{fig/control_topology.pdf}
+    \includegraphics[trim=0 15 0 15, width=0.95\columnwidth]{fig/control_topology.pdf}
     \caption{Block diagram of the controllers in this package.}
     \label{fig:control_topology}
 \end{figure}
@@ -124,9 +124,11 @@ and also $\epsilon \ge 0$. The last line is for the custom linear inequality con
 \begin{equation}
 \mathbf{\hat{x}_{min}} - \mathbf{c_{\hat{x}_{min}}}\epsilon \le \mathbf{\hat{x}}_{i}(k+H_p) \le \mathbf{\hat{x}_{max}} + \mathbf{c_{\hat{x}_{max}}}\epsilon
 \end{equation}
-in which $i=k$ when using current estimators, and $i=k-1$ for delayed formulations. Note that time-varying constraints over the horizons and changing the bounds at runtime are supported (but not in the C codegen features at the time of writing).
+in which $i=k$ when using current estimators, and $i=k-1$ for delayed formulations. Note that time-varying constraints over the horizons and changing the bounds at runtime are supported (but not in the C codegen features).
 
-The default optimizer is \texttt{OSQP.jl} that efficiently handles sparse problems \citep{osqp}, but the interface based on \texttt{JuMP.jl} allows switching among many quadratic solvers. For example, the dual active-set method of \citet{daqp} is sometimes more efficient on small and dense matrices. Testing this solver only takes 2 lines of code (see \cref{sec:successive_linearization} for an example). The user has the choice between a single shooting or a multiple shooting approach to transcribe the optimal control problem, which is also known as a condensed or sparse formulation, respectively.
+The default optimizer is \texttt{OSQP.jl} that efficiently handles sparse problems \citep{osqp}, but the interface based on \texttt{JuMP.jl} allows switching among many quadratic solvers. For example, the dual active-set method of \citet{daqp} is sometimes more efficient on small and dense matrices. Testing this solver only takes 2 lines of code (see \cref{sec:successive_linearization} for an example). 
+
+The user has the choice between a single shooting or a multiple shooting approach to transcribe the optimal control problem, which is also known as a condensed or sparse formulation, respectively. This object can be converted to a controller from \texttt{LinearMPC.jl} package for C code generation, but note that the solver and transcription is limited to the approach of \citet{daqp}.
 
 \paragraph{\textnormal{\texttt{ExplicitMPC}}}
 Linear model predictive controller without constraints, see \texttt{LinMPC} for the cost function. The computational costs are extremely low (the analytical solution of the quadratic problem leads to a single array division), therefore suitable for applications that require small sample times. It produces a control law similar to a finite-horizon linear-quadratic regulator (LQR), but with the control horizon $H_c$, the move suppression $\mathbf{N}_{H_c}$ and the input setpoint tracking $\mathbf{L}_{H_p}$ weights available as additional tuning parameters.
@@ -156,4 +158,6 @@ with $J_{\mathit{MPC}}$ from \eqref{eq:J_MPC}. The user provides custom function
     \mathbf{d}(k) \\ \mathbf{\hat{D}}
 \end{bmatrix} 
 \end{equation} 
-The bound constraints are identical to \texttt{LinMPC}. Custom nonlinear inequality constraints based on a user-defined function are not supported for now, but this feature will be added in the next release. The parameter $\mathbf{p}$ includes arbitrary constants for computing the economical costs. The default optimizer is \texttt{Ipopt.jl}, an open-source interior point method developed by \citet{ipopt}. The user has the choice between shooting methods, trapezoidal collocation, likewise MATLAB, and orthogonal collocation using Gauss-Radau or Gauss-Legendre quadrature, similarly to \citet{doMPC, gekko, acados}. They all support optional multi-threading, except for single shooting, which can be advantageous when the state-space functions are expensive to evaluate. Note that C code generation is not supported for this controller type at the time of writing.
+The bound constraints are identical to \texttt{LinMPC}. Custom nonlinear inequality constraints based on a user-defined function are not supported for now, but this feature will be added in the next release. The parameter $\mathbf{p}$ includes arbitrary constants for computing the economical costs. 
+
+The default optimizer is \texttt{Ipopt.jl}, an open-source interior point method developed by \citet{ipopt}. The user has the choice between shooting methods, trapezoidal collocation, likewise MATLAB, and orthogonal collocation using either Gauss-Radau or Gauss-Legendre quadrature, similarly to \citet{doMPC, gekko, acados}. They all support optional multi-threading, except for single shooting, which can be advantageous when the state-space functions are expensive to evaluate.
