@@ -243,7 +243,8 @@ using Plots; plot(res, plotu=false, plotxwith𝕩̂=true)
 As the motor torque is limited to \num{-1.5} to \SI{1.5}{\newton\meter}, the input constraints are incorporated to a \texttt{NonLinMPC} object:
 \begin{minted}{julia}
 Hp, Hc, Mwt, Nwt, Cwt = 20, 2, [0.5], [2.5], Inf
-nmpc = NonLinMPC(estim; Hp, Hc, Mwt, Nwt, Cwt)
+transcription = MultipleShooting()
+nmpc = NonLinMPC(estim; Hp, Hc, Mwt, Nwt, Cwt, transcription)
 umin, umax = [-1.5], [+1.5]
 nmpc = setconstraint!(nmpc; umin, umax)
 \end{minted}
@@ -328,7 +329,7 @@ function JE(UE, YE, _ , p)
 end
 p = Ts; Mwt2 = [Mwt; 0.0]; Ewt = 3.5e3
 empc = NonLinMPC(estim2; Hp, Hc, 
-                 Nwt, Mwt=Mwt2, Cwt, JE, Ewt, p)
+                 Nwt, Mwt=Mwt2, Cwt, JE, Ewt, p, transcription)
 empc = setconstraint!(empc; umin, umax)
 \end{minted}
 \spacerepl
@@ -504,13 +505,13 @@ For interior-point (IP) methods, the solvers are:
 \end{itemize}
 And, lastly, the sequential quadratic (SQ) methods are:
 \begin{itemize}
-    \item \texttt{KNITRO.jl} package in Julia \citep{knitro}
+    \item \texttt{Uno.jl} package in Julia with \texttt{filtersqp} algorithm and LS globalization \citep{uno}
     \item \texttt{sqp} configuration in MATLAB \citep{sqp}
 \end{itemize}
 
-All the solvers in Julia are free and open-source, except for \texttt{KNITRO.jl} which is commercial. A separate keyword argument in the controller constructors allows customizing the solver (see \cref{sec:successive_linearization} for an example). Only the active-set results are include for the SLMPC since \texttt{OSQP.jl} does not work as well on the pendulum (without major modifications in the optimizer settings).
+All the solvers in Julia are free and open-source. A separate keyword argument in the controller constructors allows customizing the solver (see \cref{sec:successive_linearization} for an example). Only the active-set results are include for the SLMPC since \texttt{OSQP.jl} does not work as well on the pendulum (without major modifications in the optimizer settings).
 
-A laptop with an Intel\textsuperscript{\textregistered} Core\textsuperscript{\texttrademark} i7-1165G7 (8 cores at \SI{4.70}{\giga\hertz}) and a Linux v6.17.4 kernel runs the benchmarks. The scripts are executed on Julia v1.12.1, the v1.12.0 release of this package and MATLAB R2024a. A public repository provides the code to reproduce the results, see \url{https://github.com/franckgaga/mpcPackageJulia.tex}.
+A laptop with an Intel\textsuperscript{\textregistered} Core\textsuperscript{\texttrademark} i7-1165G7 (8 cores at \SI{4.70}{\giga\hertz}) and a Linux v6.17.4 kernel runs the benchmarks. The scripts are executed on Julia v1.12.1, the v2.14.0 release of this package and MATLAB R2024a. A public repository provides the code to reproduce the results, see \url{https://github.com/franckgaga/mpcPackageJulia.tex}.
 It can be cloned, and by executing the following commands in Julia with the git root folder as the working directory:
 \begin{minted}{julia}
 using Pkg; Pkg.activate("julia"); Pkg.instantiate()

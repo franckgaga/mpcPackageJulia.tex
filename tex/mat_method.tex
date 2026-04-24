@@ -123,6 +123,9 @@ Nonlinear model predictive controller under constraints. The objective function 
 J_{\mathit{NMPC}} = J_{\mathit{MPC}} 
     + E J_E\big(\mathbf{U}_E, \mathbf{\hat{Y}}_E, \mathbf{\hat{D}}_E, \mathbf{p}\big)
 \end{equation}
+\begin{equation}\label{eq:custom_nlc}
+\mathbf{g_c}\big(\mathbf{U}_E, \mathbf{\hat{Y}}_E, \mathbf{\hat{D}}_E, \mathbf{p}\big) \le \mathbf{0}
+\end{equation}
 with $J_{\mathit{MPC}}$ from \eqref{eq:J_MPC}. The user provides a custom function $J_E$ that returns the economic costs for a given set of inputs $\mathbf{U}_E$, outputs $\mathbf{\hat{Y}}_E$ and measured disturbances $\mathbf{\hat{D}}_E$:
 \begin{equation}
 \mathbf{U}_E = 
