@@ -41,11 +41,12 @@ model = setname!(model; u=vu, y=vy)
 \end{minted}
 \spacerepl
 \begin{minted}{julia-repl}
-LinModel with a sample time Ts = 2.0 s and:
- 2 manipulated inputs u
- 2 states x
- 2 outputs y
- 0 measured disturbances d
+LinModel with a sample time Ts = 2.0 s:
+└ dimensions:
+  ├ 2 manipulated inputs u
+  ├ 2 states x
+  ├ 2 outputs y
+  └ 0 measured disturbances d
 \end{minted}
 The \texttt{model} object is used for two purposes : to construct controllers and as a plant simulator to test the design. The \texttt{setname!} function modifies the $y$-axis labels in the plots.
 
@@ -57,16 +58,20 @@ mpc = setconstraint!(LinMPC(model), ymin=[45, -Inf])
 \end{minted}
 \spacerepl
 \begin{minted}{julia-repl}
-LinMPC controller with a sample time Ts = 2.0 s, OSQP
-optimizer, SteadyKalmanFilter estimator and:
- 10 prediction steps Hp
-  2 control steps Hc
-  1 slack variable ϵ (control constraints)
-  2 manipulated inputs u (0 integrating states)
-  4 estimated states 𝕩̂
-  2 measured outputs ym (2 integrating states)
-  0 unmeasured outputs yu
-  0 measured disturbances d
+LinMPC controller with a sample time Ts = 2.0 s:
+├ estimator: SteadyKalmanFilter
+├ model: LinModel
+├ optimizer: OSQP 
+├ transcription: SingleShooting
+└ dimensions:
+  ├ 10 prediction steps Hp
+  ├  2 control steps Hc
+  ├  1 slack variable ϵ (control constraints)
+  ├  2 manipulated inputs u (0 integrating states)
+  ├  4 estimated states x̂
+  ├  2 measured outputs ym (2 integrating states)
+  ├  0 unmeasured outputs yu
+  └  0 measured disturbances d
 \end{minted}
 By default, \texttt{LinMPC} controllers use \texttt{OSQP.jl} \citep{osqp} to solve the problem, soft constraints on output predictions $\mathbf{\hat y}$ for feasibility, and a \texttt{SteadyKalmanFilter} to estimate the plant states\footnote{An internal model structure could have been used with \texttt{estim = InternalModel(model)} and \texttt{mpc = setconstraint!(LinMPC(estim); ymin=[45, -Inf])}, as an alternative to state estimators. It was tested on this example and it gave similar results.}. The default predictive and control horizons are $H_p = 10 + n_k$ and $H_c = 2$, respectively, where $n_k$ is the number of delays in the linear model. The $H_c$ value is small by default to reduce the computational burden and the aggressiveness \citep{mpcHcAnalysis}. An attentive reader will also notice that the Kalman filter estimates two additional states compared to the plant model. These are the integrating states for the unmeasured plant disturbances, and they are automatically added at the model measured output $\mathbf{y^m}$ by default if observability is preserved.
 
@@ -116,11 +121,12 @@ model_d = setname!(model_d; u=vu, y=vy, d=["\$u_l\$"])
 \end{minted}
 \spacerepl
 \begin{minted}{julia-repl}
-LinModel with a sample time Ts = 2.0 s and:
- 2 manipulated inputs u
- 4 states x
- 2 outputs y
- 1 measured disturbances d
+LinModel with a sample time Ts = 2.0 s:
+└ dimensions:
+  ├ 2 manipulated inputs u
+  ├ 4 states x
+  ├ 2 outputs y
+  └ 1 measured disturbances d
 \end{minted}
 The simulation needs a new \texttt{LinMPC} instance based on \texttt{model\_d} and a new test function that explicitly employs the current disturbance measurement:
 \begin{minted}{julia}
@@ -194,12 +200,14 @@ model = setname!(model; u=vu, x=vx, y=vy)
 \end{minted}
 \spacerepl
 \begin{minted}{julia-repl}
-NonLinModel with a sample time Ts = 0.1 s, RungeKutta
-solver and:
- 1 manipulated inputs u
- 2 states x
- 1 outputs y
- 0 measured disturbances d
+NonLinModel with a sample time Ts = 0.1 s:
+├ solver: RungeKutta(4)
+├ jacobian: AutoForwardDiff
+└ dimensions:
+  ├ 1 manipulated inputs u
+  ├ 2 states x
+  ├ 1 outputs y
+  └ 0 measured disturbances d
 \end{minted}
 The output function $\mathbf{h}$ converts the $\theta$ angle to degrees. The plant model relies on mutating state-space functions to reduce the memory allocations and the computational burden as well. The more intuitive non-mutating syntax can still be used by providing functions with one less argument, e.g.: \texttt{f(x,u,d,p)=x+u+d+p} and \texttt{h(x,d,p)=x+d+p}.
 
@@ -208,26 +216,26 @@ The output function $\mathbf{h}$ converts the $\theta$ angle to degrees. The pla
 The state estimates of an \texttt{UnscentedKalmanFilter} will feed the controller:
 \begin{minted}{julia}
 σQ = [0.1, 1.0]; σR=[5.0]; nint_u=[1]; σQint_u=[0.1]
-estim = UnscentedKalmanFilter(model; σQ, σR, 
-                              nint_u, σQint_u)
+estim = UnscentedKalmanFilter(model; σQ, σR, nint_u, σQint_u)
 \end{minted}
 \spacerepl
 \begin{minted}{julia-repl}
-UnscentedKalmanFilter estimator with a sample time Ts =
-0.1 s, NonLinModel and:
- 1 manipulated inputs u (1 integrating states)
- 3 states 𝕩̂
- 1 measured outputs ym (0 integrating states)
- 0 unmeasured outputs yu
- 0 measured disturbances d
+UnscentedKalmanFilter estimator with a sample time Ts = 0.1 s:
+├ model: NonLinModel
+└ dimensions:
+  ├ 1 manipulated inputs u (1 integrating states)
+  ├ 3 estimated states x̂
+  ├ 1 measured outputs ym (0 integrating states)
+  ├ 0 unmeasured outputs yu
+  └ 0 measured disturbances d
 \end{minted}
-The vectors \texttt{σQ} and \texttt{σR} are the standard deviations of the process and sensor noises, respectively. The value for the velocity $\omega$ is higher here (\texttt{σQ} second value) since \eqref{eq.pendulum_speed} includes an uncertain parameter: the friction coefficient $K$. Also, the argument \texttt{nint\_u} explicitly adds one integrating state at the model input, the motor torque $\tau$, with an associated standard deviation \texttt{σQint\_u} of $\SI{0.1}{\newton\meter}$. Custom models for the unmeasured disturbances will be added in a future release (other than integrators). The estimator tuning is tested on a plant with a \SI{25}{\percent} larger friction coefficient $K$: 
+The vectors \texttt{σQ} and \texttt{σR} are the standard deviations of the process and sensor noises, respectively. The value for the velocity $\omega$ is higher here (\texttt{σQ} second value) since \eqref{eq.pendulum_speed} includes an uncertain parameter: the friction coefficient $K$. Also, the argument \texttt{nint\_u} explicitly adds one integrating state at the model input, the motor torque $\tau$, with an associated standard deviation \texttt{σQint\_u} of $\SI{0.1}{\newton\meter}$. About this, custom models for the unmeasured disturbances is possible by constructing a \texttt{NonLinModel} with the state-space functions based on the augmented dynamics directly, and by specifying \texttt{nint\_u=0} and \texttt{nint\_ym=0} when constructing the estimator. The estimator tuning is tested on a plant with a \SI{25}{\percent} larger friction coefficient $K$: 
 \begin{minted}{julia}
 p_plant = copy(p); p_plant[3] = 1.25*p[3]
 plant = NonLinModel(f!, h!, Ts, nu, nx, ny; p=p_plant)
 N = 35; u = [0.5]; 
 res = sim!(estim, N, u; plant, y_noise=[0.5])
-using Plots; plot(res, plotu=false, plotxwith𝕩̂=true)
+using Plots; plot(res, plotu=false, plotxwithx̂=true)
 \end{minted}
 
 \begin{figure}[h]
@@ -250,23 +258,31 @@ nmpc = setconstraint!(nmpc; umin, umax)
 \end{minted}
 \spacerepl
 \begin{minted}{julia-repl}
-NonLinMPC controller with a sample time Ts = 0.1 s, Ipopt
-optimizer, UnscentedKalmanFilter estimator and:
- 20 prediction steps Hp
-  2 control steps Hc
-  0 slack variable ϵ (control constraints)
-  1 manipulated inputs u (1 integrating states)
-  3 estimated states 𝕩̂
-  1 measured outputs ym (0 integrating states)
-  0 unmeasured outputs yu
-  0 measured disturbances d
+NonLinMPC controller with a sample time Ts = 0.1 s:
+├ estimator: UnscentedKalmanFilter
+├ model: NonLinModel
+├ optimizer: Ipopt 
+├ transcription: MultipleShooting
+├ gradient: AutoForwardDiff
+├ jacobian: AutoSparse (AutoForwardDiff, TracerSparsityDetector, 
+                                         GreedyColoringAlgorithm)
+├ hessian: nothing
+└ dimensions:
+  ├ 20 prediction steps Hp
+  ├  2 control steps Hc
+  ├  0 slack variable ϵ (control constraints)
+  ├  1 manipulated inputs u (1 integrating states)
+  ├  3 estimated states x̂
+  ├  1 measured outputs ym (0 integrating states)
+  ├  0 unmeasured outputs yu
+  └  0 measured disturbances d
 \end{minted}
 The keyword arguments \texttt{Mwt} and \texttt{Nwt} are the output setpoint tracking and move suppression weights, respectively. The option \texttt{Cwt=Inf} disables the slack variable $\epsilon$ when not needed. 
 
 An angular setpoint of \SI{180}{\degree} (inverted position) tests \texttt{mpc} performances on the plant:
 \begin{minted}{julia}
-x_0 = [0, 0]; 𝕩̂_0 = [0, 0, 0]; ry = [180]
-res_ry = sim!(nmpc, N, ry; plant, x_0, 𝕩̂_0)
+x_0 = [0, 0]; x̂_0 = [0, 0, 0]; ry = [180]
+res_ry = sim!(nmpc, N, ry; plant, x_0, x̂_0)
 plot(res_ry)
 \end{minted}
 
@@ -280,8 +296,8 @@ The result in \cref{fig:plot_NonLinMPC2} suggests that the controller is robust 
 
 Starting from this inverted position, \cref{fig:plot_NonLinMPC3} shows the closed-loop response to a step disturbances of \SI{10}{\degree} is satisfactory:
 \begin{minted}{julia}
-x_0 = [π, 0]; 𝕩̂_0 = [π, 0, 0]; y_step = [10]
-res_yd = sim!(nmpc, N, [180.0]; plant, x_0, 𝕩̂_0, y_step)
+x_0 = [π, 0]; x̂_0 = [π, 0, 0]; y_step = [10]
+res_yd = sim!(nmpc, N, [180.0]; plant, x_0, x̂_0, y_step)
 plot(res_yd)
 \end{minted}
 
@@ -322,34 +338,42 @@ estim2 = UnscentedKalmanFilter(model2; σQ, σR,
 \end{minted}
 The \texttt{plant2} object based on \texttt{h2!} is also required since \texttt{sim!} expects that the plant output vector $\mathbf{y}$ corresponds to the controller model output vector. Now, these lines define the $J_E$ function and the controller:
 \begin{minted}{julia}
-function JE(UE, YE, _ , p)
+function JE(UE, ŶE, _ , p , _ )
     Ts = p
-    τ, ω = UE[1:end-1], YE[2:2:end-1]
+    τ, ω = UE[1:end-1], ŶE[2:2:end-1]
     return Ts*sum(τ.*ω)
 end
 p = Ts; Mwt2 = [Mwt; 0.0]; Ewt = 3.5e3
-empc = NonLinMPC(estim2; Hp, Hc, 
-                 Nwt, Mwt=Mwt2, Cwt, JE, Ewt, p, transcription)
+empc = NonLinMPC(estim2; Hp, Hc, Mwt=Mwt2, 
+                 Nwt, Cwt, JE, Ewt, p, transcription)
 empc = setconstraint!(empc; umin, umax)
 \end{minted}
 \spacerepl
 \begin{minted}{julia-repl}
-NonLinMPC controller with a sample time Ts = 0.1 s, Ipopt
-optimizer, UnscentedKalmanFilter estimator and:
- 20 prediction steps Hp
-  2 control steps Hc
-  0 slack variable ϵ (control constraints)
-  1 manipulated inputs u (1 integrating states)
-  3 estimated states 𝕩̂
-  1 measured outputs ym (0 integrating states)
-  1 unmeasured outputs yu
-  0 measured disturbances d
+NonLinMPC controller with a sample time Ts = 0.1 s:
+├ estimator: UnscentedKalmanFilter
+├ model: NonLinModel
+├ optimizer: Ipopt 
+├ transcription: MultipleShooting
+├ gradient: AutoForwardDiff
+├ jacobian: AutoSparse (AutoForwardDiff, TracerSparsityDetector, 
+                                         GreedyColoringAlgorithm)
+├ hessian: nothing
+└ dimensions:
+  ├ 20 prediction steps Hp
+  ├  2 control steps Hc
+  ├  0 slack variable ϵ (control constraints)
+  ├  1 manipulated inputs u (1 integrating states)
+  ├  3 estimated states x̂
+  ├  1 measured outputs ym (0 integrating states)
+  ├  1 unmeasured outputs yu
+  └  0 measured disturbances d
 \end{minted}
 
 The keyword argument \texttt{Ewt} is the $E$ weight in \eqref{eq:J_NMPC}. The economic term must be large enough to be significant but a too high value can lead to a static error on the angle setpoint. The second element of \texttt{Mwt2} is zero since the speed $\omega$ is not requested to track a setpoint. \cref{fig:plot_EconomMPC1} shows that closed-loop response to a \SI{180}{\degree} setpoint is similar:
 \begin{minted}{julia}
-x_0 = [0, 0]; 𝕩̂_0 = [0, 0, 0]; ry = [180; 0]
-res2_ry = sim!(empc, N, ry; plant=plant2, x_0, 𝕩̂_0)
+x_0 = [0, 0]; x̂_0 = [0, 0, 0]; ry = [180; 0]
+res2_ry = sim!(empc, N, ry; plant=plant2, x_0, x̂_0)
 plot(res2_ry, ploty=[1])
 \end{minted}
 
@@ -376,9 +400,8 @@ Dict{Symbol, Float64} with 2 entries:
 
 \noindent Also, for a \SI{10}{\degree} step disturbance (results depicted in \cref{fig:plot_EconomMPC2}):
 \begin{minted}{julia}
-x_0 = [π, 0]; 𝕩̂_0 = [π, 0, 0]; y_step = [10; 0]
-res2_yd = sim!(empc, N, ry; plant=plant2, 
-                            x_0, 𝕩̂_0, y_step)
+x_0 = [π, 0]; x̂_0 = [π, 0, 0]; y_step = [10; 0]
+res2_yd = sim!(empc, N, ry; plant=plant2, x_0, x̂_0, y_step)
 plot(res2_yd, ploty=[1])
 \end{minted}
 
@@ -418,30 +441,34 @@ mpc3 = setconstraint!(mpc3; umin, umax)
 \end{minted}
 \spacerepl
 \begin{minted}{julia-repl}
-LinMPC controller with a sample time Ts = 0.1 s, DAQP
-optimizer, KalmanFilter estimator and:
- 20 prediction steps Hp
-  2 control steps Hc
-  0 slack variable ϵ (control constraints)
-  1 manipulated inputs u (1 integrating states)
-  3 estimated states 𝕩̂
-  1 measured outputs ym (0 integrating states)
-  0 unmeasured outputs yu
-  0 measured disturbances d
+LinMPC controller with a sample time Ts = 0.1 s:
+├ estimator: KalmanFilter
+├ model: LinModel
+├ optimizer: DAQP 
+├ transcription: SingleShooting
+└ dimensions:
+  ├ 20 prediction steps Hp
+  ├  2 control steps Hc
+  ├  0 slack variable ϵ (control constraints)
+  ├  1 manipulated inputs u (1 integrating states)
+  ├  3 estimated states x̂
+  ├  1 measured outputs ym (0 integrating states)
+  ├  0 unmeasured outputs yu
+  └  0 measured disturbances d
 \end{minted}
 A custom simulation function that successively linearizes the pendulum model and updates the \texttt{LinMPC} controller with \texttt{setmodel!} is required: 
 \begin{minted}{julia}
-function sim2!(mpc, nlmodel, N, ry, plant, x, 𝕩̂, y_step)
+function sim2!(mpc, nlmodel, N, ry, plant, x, x̂, y_step)
     U, Y, Ry = zeros(1, N), zeros(1, N), zeros(1, N)
-    setstate!(plant, x); setstate!(mpc, 𝕩̂)
+    setstate!(plant, x); setstate!(mpc, x̂)
     initstate!(mpc, [0], plant())
-    linmodel = linearize(nlmodel; u=[0], x=𝕩̂[1:2])
+    linmodel = linearize(nlmodel; u=[0], x=x̂[1:2])
     setmodel!(mpc, linmodel)
     for i = 1:N
         y = plant() + y_step
-        𝕩̂ = preparestate!(mpc, y)
+        x̂ = preparestate!(mpc, y)
         u = mpc(ry)
-        linearize!(linmodel, nlmodel; u, x=𝕩̂[1:2])
+        linearize!(linmodel, nlmodel; u, x=x̂[1:2])
         setmodel!(mpc, linmodel) 
         U[:,i], Y[:,i], Ry[:,i] = u, y, ry
         updatestate!(mpc, u, y)
@@ -453,8 +480,8 @@ end
 \end{minted}
 The new model is set after solving the optimization problem, and before updating the state estimate, that is, when both $\mathbf{u}(k)$ and $\mathbf{\hat{x}}_k(k)$ are available as the new operating point. As shown in \cref{fig:plot_SuccLinMPC1} and \ref{fig:plot_SuccLinMPC2}, the SLMPC closed-loop response is similar to the nonlinear MPC, both for the 180° setpoint:
 \begin{minted}{julia}
-x_0 = [0, 0]; 𝕩̂_0 = [0, 0, 0]; ry = [180]
-res3_ry = sim2!(mpc3, model, N, ry, plant, x_0, 𝕩̂_0, [0])
+x_0 = [0, 0]; x̂_0 = [0, 0, 0]; ry = [180]
+res3_ry = sim2!(mpc3, model, N, ry, plant, x_0, x̂_0, [0])
 plot(res3_ry)
 \end{minted}
 
@@ -466,8 +493,8 @@ plot(res3_ry)
 
 \noindent and the 10° step disturbance:
 \begin{minted}{julia}
-x_0 = [π, 0]; 𝕩̂_0 = [π, 0, 0]; ry = [180]
-res3_yd = sim2!(mpc3, model, N, ry, plant, x_0, 𝕩̂_0, [10])
+x_0 = [π, 0]; x̂_0 = [π, 0, 0]; ry = [180]
+res3_yd = sim2!(mpc3, model, N, ry, plant, x_0, x̂_0, [10])
 plot(res3_yd)
 \end{minted}
 
@@ -505,13 +532,13 @@ For interior-point (IP) methods, the solvers are:
 \end{itemize}
 And, lastly, the sequential quadratic (SQ) methods are:
 \begin{itemize}
-    \item \texttt{UnoSolver.jl} package in Julia with \texttt{filtersqp} preset and a line search globalization mechanism \citep{uno}
+    \item \texttt{UnoSolver.jl} package in Julia with \texttt{filtersqp} and a line search globalization mechanism \citep{uno}
     \item \texttt{sqp} configuration in MATLAB \citep{sqp}
 \end{itemize}
 
 All the solvers in Julia are free and open-source. A separate keyword argument in the controller constructors allows customizing the solver (see \cref{sec:successive_linearization} for an example). Only the active-set results are include for the SLMPC since \texttt{OSQP.jl} does not work as well on the pendulum (without major modifications in the optimizer settings).
 
-A laptop with an Intel\textsuperscript{\textregistered} Core\textsuperscript{\texttrademark} i7-1165G7 (8 cores at \SI{4.70}{\giga\hertz}) and a Linux v6.17.4 kernel runs the benchmarks. The scripts are executed on Julia v1.12.1, the v2.14.0 release of this package and MATLAB R2024a. A public repository provides the code to reproduce the results, see \url{https://github.com/franckgaga/mpcPackageJulia.tex}.
+A laptop with an Intel\textsuperscript{\textregistered} Core\textsuperscript{\texttrademark} i7-1165G7 (8 cores at \SI{4.70}{\giga\hertz}) and a Linux v6.17.0 kernel runs the benchmarks. The scripts are executed on Julia v1.12.6, the v2.3.0 release of this package and MATLAB R2024a. A public repository provides the code to reproduce the results, see \url{https://github.com/franckgaga/mpcPackageJulia.tex}.
 It can be cloned, and by executing the following commands in Julia with the git root folder as the working directory:
 \begin{minted}{julia}
 using Pkg; Pkg.activate("julia"); Pkg.instantiate()

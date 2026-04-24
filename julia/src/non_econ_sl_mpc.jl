@@ -270,8 +270,7 @@ end
 
 ## =========================================
 x_0 = [π, 0]; x̂_0 = [π, 0, 0]; y_step = [10; 0]
-res2_yd = sim!(empc, N, ry; plant=plant2, 
-                            x_0, x̂_0, y_step)
+res2_yd = sim!(empc, N, ry; plant=plant2, x_0, x̂_0, y_step)
 plot(res2_yd, ploty=[1])
 
 ## =========================================
@@ -331,17 +330,17 @@ mpc3 = LinMPC(kf; Hp, Hc, Mwt, Nwt, Cwt, optim)
 mpc3 = setconstraint!(mpc3; umin, umax)
 
 ## ==========================================
-function sim2!(mpc, nlmodel, N, ry, plant, x, 𝕩̂, y_step)
+function sim2!(mpc, nlmodel, N, ry, plant, x, x̂, y_step)
     U, Y, Ry = zeros(1, N), zeros(1, N), zeros(1, N)
-    setstate!(plant, x); setstate!(mpc, 𝕩̂)
+    setstate!(plant, x); setstate!(mpc, x̂)
     initstate!(mpc, [0], plant())
-    linmodel = linearize(nlmodel; u=[0], x=𝕩̂[1:2])
+    linmodel = linearize(nlmodel; u=[0], x=x̂[1:2])
     setmodel!(mpc, linmodel)
     for i = 1:N
         y = plant() + y_step
-        𝕩̂ = preparestate!(mpc, y)
+        x̂ = preparestate!(mpc, y)
         u = mpc(ry)
-        linearize!(linmodel, nlmodel; u, x=𝕩̂[1:2])
+        linearize!(linmodel, nlmodel; u, x=x̂[1:2])
         setmodel!(mpc, linmodel) 
         U[:,i], Y[:,i], Ry[:,i] = u, y, ry
         updatestate!(mpc, u, y)
@@ -352,8 +351,8 @@ function sim2!(mpc, nlmodel, N, ry, plant, x, 𝕩̂, y_step)
 end
 
 ## ==========================================
-x_0 = [0, 0]; 𝕩̂_0 = [0, 0, 0]; ry = [180]
-res3_ry = sim2!(mpc3, model, N, ry, plant, x_0, 𝕩̂_0, [0])
+x_0 = [0, 0]; x̂_0 = [0, 0, 0]; ry = [180]
+res3_ry = sim2!(mpc3, model, N, ry, plant, x_0, x̂_0, [0])
 plot(res3_ry)
 
 ## =========================================
@@ -382,8 +381,8 @@ if run_benchmarks
 end
 
 ## =========================================
-x_0 = [π, 0]; 𝕩̂_0 = [π, 0, 0]; ry = [180]
-res3_yd = sim2!(mpc3, model, N, ry, plant, x_0, 𝕩̂_0, [10])
+x_0 = [π, 0]; x̂_0 = [π, 0, 0]; ry = [180]
+res3_yd = sim2!(mpc3, model, N, ry, plant, x_0, x̂_0, [10])
 plot(res3_yd)
 
 ## =========================================

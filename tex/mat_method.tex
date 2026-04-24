@@ -7,7 +7,7 @@ The functions of this package dispatch over three abstract types, described here
 
 \paragraph{\textnormal{\texttt{SimModel}}} (2 subtypes) -- Discrete state-space models of the plant, including linear and nonlinear representations. Constructors automatically discretize continuous-time linear systems. Instances of \texttt{SimModel} serves as a wrapper to construct \texttt{StateEstimator} or \texttt{PredictiveController} objects, and also as plant simulators to test the designs.
 
-\paragraph{\textnormal{\texttt{StateEstimator}}} (7 subtypes) -- Open loop and closed-loop state observers, both for deterministic or stochastic systems. They produce the full state feedback for the \texttt{PredictiveController}.
+\paragraph{\textnormal{\texttt{StateEstimator}}} (8 subtypes) -- Open loop and closed-loop state observers, both for deterministic or stochastic systems. They produce the full state feedback for the \texttt{PredictiveController}.
 
 \paragraph{\textnormal{\texttt{PredictiveController}}} (3 subtypes)  -- Linear and nonlinear MPC are available. An explicit controller based on matrix algebra is also possible for linear models without constraint.
 
@@ -26,7 +26,7 @@ Linear state-space representations of the plant. Continuous-time models are disc
 in which the vectors $\mathbf{u}$, $\mathbf{d}$, $\mathbf{x}$ and $\mathbf{y}$ are the manipulated input, measured disturbance, state and output of the model, respectively. Objects are constructed with \texttt{ss} or \texttt{tf} functions from \texttt{ControlSystems.jl}, or by providing the fives state-space matrices directly. All the \texttt{StateEstimator} and \texttt{PredictiveController} objects based on a \texttt{LinModel} representation allow online model modifications (see the \cref{sec:successive_linearization} for an example with successive linearizations).
 
 \paragraph{\textnormal{\texttt{NonLinModel}}}
-Nonlinear state-space descriptions of the plant. A built-in 4th order Runge-Kutta solver with optional supersampling discretizes continuous-time dynamics by default, leading to the following system of equations:. 
+Nonlinear state-space descriptions of the plant. A built-in 4th order Runge-Kutta solver with optional supersampling discretizes continuous-time dynamics by default, leading to the following system of equations:
 \begin{subequations}
 \begin{align}
     \mathbf{x}(k+1) &= \mathbf{f}\big(\mathbf{x}(k), \mathbf{u}(k), \mathbf{d}(k), \mathbf{p} \big) \\
@@ -79,6 +79,9 @@ and also $\varepsilon \ge 0$. The $\mathbf{\hat{X}}$ vector gathers the state es
 \paragraph{\textnormal{\texttt{InternalModel}}}
 Allows predictive control designs based on an internal model structure. It is based on the general approach of \citet{globPC}. The stochastic model of the unmeasured disturbances defaults to integrating white noise for each measured output (customizable). This is the equivalent of assuming that the disturbances are constant over the prediction horizon, similarly to dynamic matrix control (DMC). It supports asymptotically stable \texttt{LinModel} or \texttt{NonLinModel}.
 
+\paragraph{\textnormal{\texttt{ManualEstimator}}}
+Special subtype to disable the built-in state estimator and provide a custom feedback strategy.
+
 \subsection{Predictive Controllers}
 
 The prediction methodology applied throughout the package is mainly based on \citet{mpcMac} textbook. The three \texttt{PredictiveController} types are presented in the next sections.
@@ -104,15 +107,18 @@ The problem is subject to the following constraints:
         &&\le \mathbf{\Delta U_{max} + C_{\Delta u_{max}}} \epsilon \\
     \mathbf{Y_{min}  - C_{y_{min}}}  \epsilon 
          &\le \mathbf{\hat{Y}} 
-        &&\le \mathbf{Y_{max}  + C_{y_{max}}}  \epsilon
+        &&\le \mathbf{Y_{max}  + C_{y_{max}}}  \epsilon \\
+    \mathbf{W_{min}  - C_{w_{min}}}  \epsilon 
+         &\le \mathbf{W} 
+        &&\le \mathbf{W_{max}  + C_{w_{max}}}  \epsilon
 \end{alignat}
-and also $\epsilon \ge 0$. Box constraints on the terminal states are also possible: 
+and also $\epsilon \ge 0$. The last line is for custom linear inequality constraints, the vector $\mathbf{W}$ being defined as any linear combinations of the inputs, outputs and setpoints. Box constraints on the terminal states are also possible: 
 \begin{equation}
 \mathbf{\hat{x}_{min}} {-} \mathbf{c_{\hat{x}_{min}}}\epsilon \le \mathbf{\hat{x}}_{i}(k{+}H_p) \le \mathbf{\hat{x}_{max}} + \mathbf{c_{\hat{x}_{max}}}\epsilon
 \end{equation}
-in which $i=k$ when using current estimators, and $i=k-1$ for delayed formulations. Note that changing the bounds at runtime and time-varying constraints over the horizons are supported.
+in which $i=k$ when using current estimators, and $i=k-1$ for delayed formulations. Note that time-varying constraints over the horizons and changing the bounds at runtime are supported (but not in the C codegen features at the time of writing).
 
-The default optimizer is \texttt{OSQP.jl} that efficiently handles sparse problems \citep{osqp}, but the interface based on \texttt{JuMP.jl} allows switching among many quadratic solvers. For example, the dual active-set method of \citet{daqp} is sometimes more efficient on small and dense matrices. Testing this solver only takes 2 lines of code (see \cref{sec:successive_linearization} for an example).
+The default optimizer is \texttt{OSQP.jl} that efficiently handles sparse problems \citep{osqp}, but the interface based on \texttt{JuMP.jl} allows switching among many quadratic solvers. For example, the dual active-set method of \citet{daqp} is sometimes more efficient on small and dense matrices. Testing this solver only takes 2 lines of code (see \cref{sec:successive_linearization} for an example). The user has the choice between a single shooting or a multiple shooting approach to transcribe the optimal control problem, which is also known as a condensed or sparse formulation, respectively.
 
 \paragraph{\textnormal{\texttt{ExplicitMPC}}}
 Linear model predictive controller without constraints, see \texttt{LinMPC} for the cost function. The computational costs are extremely low (the analytical solution of the quadratic problem leads to a single array division), therefore suitable for applications that require small sample times. It produces a control law similar to a finite-horizon linear-quadratic regulator (LQR), but with the control horizon $H_c$, the move suppression $\mathbf{N}_{H_c}$ and the input setpoint tracking $\mathbf{L}_{H_p}$ weights available as additional tuning parameters.
@@ -121,12 +127,13 @@ Linear model predictive controller without constraints, see \texttt{LinMPC} for 
 Nonlinear model predictive controller under constraints. The objective function includes an additional term for economic MPC:
 \begin{equation}\label{eq:J_NMPC}
 J_{\mathit{NMPC}} = J_{\mathit{MPC}} 
-    + E J_E\big(\mathbf{U}_E, \mathbf{\hat{Y}}_E, \mathbf{\hat{D}}_E, \mathbf{p}\big)
+    + E J_E\big(\mathbf{U}_E, \mathbf{\hat{Y}}_E, \mathbf{\hat{D}}_E, \mathbf{p}, \epsilon \big)
 \end{equation}
-\begin{equation}\label{eq:custom_nlc}
-\mathbf{g_c}\big(\mathbf{U}_E, \mathbf{\hat{Y}}_E, \mathbf{\hat{D}}_E, \mathbf{p}\big) \le \mathbf{0}
+subject the custom nonlinear inequality constraints:
+\begin{equation}
+\mathbf{g_c}\big(\mathbf{U}_E, \mathbf{\hat{Y}}_E, \mathbf{\hat{D}}_E, \mathbf{p}, \epsilon \big) \le \mathbf{0}
 \end{equation}
-with $J_{\mathit{MPC}}$ from \eqref{eq:J_MPC}. The user provides a custom function $J_E$ that returns the economic costs for a given set of inputs $\mathbf{U}_E$, outputs $\mathbf{\hat{Y}}_E$ and measured disturbances $\mathbf{\hat{D}}_E$:
+with $J_{\mathit{MPC}}$ from \eqref{eq:J_MPC}. The user provides custom functions $J_E$ and $\mathbf{g_c}$ that returns the economic costs and the constraint values for a given set of inputs $\mathbf{U}_E$, outputs $\mathbf{\hat{Y}}_E$ and measured disturbances $\mathbf{\hat{D}}_E$:
 \begin{equation}
 \mathbf{U}_E = 
 \begin{bmatrix}
@@ -141,4 +148,4 @@ with $J_{\mathit{MPC}}$ from \eqref{eq:J_MPC}. The user provides a custom functi
     \mathbf{d}(k) \\ \mathbf{\hat{D}}
 \end{bmatrix} 
 \end{equation} 
-The bound constraints are identical to \texttt{LinMPC}. Custom nonlinear inequality constraints based on a user-defined function are not supported for now, but this feature will be added in the next release. The parameter $\mathbf{p}$ includes arbitrary constants for computing the economical costs. The default optimizer is \texttt{Ipopt.jl}, an open-source interior point method developed by \citet{ipopt}.
+The bound constraints are identical to \texttt{LinMPC}. Custom nonlinear inequality constraints based on a user-defined function are not supported for now, but this feature will be added in the next release. The parameter $\mathbf{p}$ includes arbitrary constants for computing the economical costs. The default optimizer is \texttt{Ipopt.jl}, an open-source interior point method developed by \citet{ipopt}. The user has the choice between shooting methods, trapezoidal collocation, likewise MATLAB, and orthogonal collocation based on a Gauss-Lobatto or Gauss-Radau quadrature, similarly to \citet{doMPC, gekko, acados}. Note that C code generation is not supported for this controller type at the time of writing.
