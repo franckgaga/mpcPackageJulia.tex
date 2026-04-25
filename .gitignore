@@ -36,3 +36,4 @@ fig/yo/cstr.svg
 .vscode/
 julia/.vscode
 matlab/.vscode
+*.xdv

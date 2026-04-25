@@ -3,11 +3,19 @@
 
 \section{Methodology}
 
-The functions of this package dispatch over three abstract types, described hereafter.
+The functions of this package dispatch over three abstract types, described hereafter. The
+\cref{fig:control_topology} illustrates the main signals and the interactions between the different components of the controllers. The gray parts are features that are less commonly used, thus disabled by default. The following sections introduce the various mathematical symbols depicted in the figure.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[trim=0 15 0 15, width=0.95\columnwidth]{fig/control_topology.pdf}
+    \caption{Block diagram of the controllers in this package.}
+    \label{fig:control_topology}
+\end{figure}
 
 \paragraph{\textnormal{\texttt{SimModel}}} (2 subtypes) -- Discrete state-space models of the plant, including linear and nonlinear representations. Constructors automatically discretize continuous-time linear systems. Instances of \texttt{SimModel} serves as a wrapper to construct \texttt{StateEstimator} or \texttt{PredictiveController} objects, and also as plant simulators to test the designs.
 
-\paragraph{\textnormal{\texttt{StateEstimator}}} (7 subtypes) -- Open loop and closed-loop state observers, both for deterministic or stochastic systems. They produce the full state feedback for the \texttt{PredictiveController}.
+\paragraph{\textnormal{\texttt{StateEstimator}}} (8 subtypes) -- Open loop and closed-loop state observers, both for deterministic or stochastic systems. They produce the full state feedback for the \texttt{PredictiveController}.
 
 \paragraph{\textnormal{\texttt{PredictiveController}}} (3 subtypes)  -- Linear and nonlinear MPC are available. An explicit controller based on matrix algebra is also possible for linear models without constraint.
 
@@ -23,17 +31,17 @@ Linear state-space representations of the plant. Continuous-time models are disc
     \mathbf{y}(k)   &= \mathbf{C x}(k) + \mathbf{D_d d}(k)
 \end{align}
 \end{subequations}
-in which the vectors $\mathbf{u}$, $\mathbf{d}$, $\mathbf{x}$ and $\mathbf{y}$ are the manipulated input, measured disturbance, state and output of the model, respectively. Objects are constructed with \texttt{ss} or \texttt{tf} functions from \texttt{ControlSystems.jl}, or by providing the fives state-space matrices directly. All the \texttt{StateEstimator} and \texttt{PredictiveController} objects based on a \texttt{LinModel} representation allow online model modifications (see the \cref{sec:successive_linearization} for an example with successive linearizations).
+in which the vectors $\mathbf{u}$, $\mathbf{d}$, $\mathbf{x}$ and $\mathbf{y}$ are the manipulated input, measured disturbance, state and output of the model, respectively. Objects are constructed with \texttt{ss} or \texttt{tf} functions from \texttt{ControlSystems.jl}, or by providing the fives state-space matrices directly. All the \texttt{StateEstimator} and \texttt{PredictiveController} objects based on a \texttt{LinModel} representation allow online model modifications of the state-space matrices (see the \cref{sec:successive_linearization} for an example with successive linearizations).
 
 \paragraph{\textnormal{\texttt{NonLinModel}}}
-Nonlinear state-space descriptions of the plant. A built-in 4th order Runge-Kutta solver with optional supersampling discretizes continuous-time dynamics by default, leading to the following system of equations:. 
+Nonlinear state-space system of the plant described by ordinary differential equations. Differential and algebraic equation systems are not supported yet, but they are planned. A built-in 4th order Runge-Kutta solver with optional supersampling discretizes continuous-time dynamics by default, leading to the following system of equations:
 \begin{subequations}
 \begin{align}
     \mathbf{x}(k+1) &= \mathbf{f}\big(\mathbf{x}(k), \mathbf{u}(k), \mathbf{d}(k), \mathbf{p} \big) \\
     \mathbf{y}(k)   &= \mathbf{h}\big( \mathbf{x}(k), \mathbf{d}(k), \mathbf{p} \big)
 \end{align}
 \end{subequations}
-with $\mathbf{p}$ encapsulating all the model parameters. It is worth mentioning that the state update $\mathbf{f}$ and output $\mathbf{h}$ functions must be in pure Julia to design nonlinear MPCs from them, since the implementation rely on the forward-mode automatic differentiation of \texttt{ForwardDiff.jl} \citep{forwardDiff}.
+with $\mathbf{p}$ encapsulating all the model parameters. It is worth mentioning that the state update $\mathbf{f}$ and output $\mathbf{h}$ functions must be in pure Julia to design nonlinear MPCs with an automatic differentiation backend, like the default \texttt{ForwardDiff.jl} backend \citep{forwardDiff}. The finite difference backends do not have this requirement.
 
 \subsection{State Estimators}
 
@@ -53,10 +61,10 @@ Time-varying formulation of the Kalman filter. It can evaluate the estimation er
 Deterministic state observer based on eigenvalue placement in closed-loop. It pre-computes the observer gain with \texttt{place} function from \texttt{ControlSystems.jl}, that implements the method of \citet{placePoles}.
 
 \paragraph{\textnormal{\texttt{UnscentedKalmanFilter}}}
-A Kalman filter for nonlinear systems relying on the generalized unscented transform \citep{simon}. It propagates the mean and covariance of the noise by approximating the state probability distribution instead of linearizing the plant model like in the \texttt{ExtendedKalmanFilter}. This is the default state estimator for controllers based on \texttt{NonLinModel} objects.
+Kalman filter for nonlinear systems relying on the generalized unscented transform \citep{simon}. It propagates the mean and covariance of the noise by approximating the state probability distribution instead of linearizing the plant model like in the \texttt{ExtendedKalmanFilter}. This is the default state estimator for controllers based on \texttt{NonLinModel} objects.
 
 \paragraph{\textnormal{\texttt{ExtendedKalmanFilter}}}
-Extension of \texttt{KalmanFilter} for nonlinear models. The Jacobians of the nonlinear state-space functions approximate the propagation of the noise. These matrices are automatically computed by forward mode automatic differentiation.
+An extension of \texttt{KalmanFilter} for nonlinear models. The Jacobians of the nonlinear state-space functions approximate the propagation of the noise. These matrices are automatically computed by forward mode automatic differentiation.
 
 \paragraph{\textnormal{\texttt{MovingHorizonEstimator}}}
 Also known as receding horizon estimation. It minimizes at each discrete time $k$ the following cost function over an estimation window of $N_k = \min(k+1, H_e)$ steps, where $H_e$ is the estimation horizon:
@@ -74,10 +82,13 @@ This approach allows incorporating additional physical information on the proces
     \mathbf{\hat{W}_{min} - C_{\hat{w}_{min}}} \varepsilon &\le \mathbf{\hat{W}} &&\le \mathbf{\hat{W}_{max} + C_{\hat{w}_{max}}} \varepsilon \\
     \mathbf{\hat{V}_{min} - C_{\hat{v}_{min}}} \varepsilon &\le \mathbf{\hat{V}} &&\le \mathbf{\hat{V}_{max} + C_{\hat{v}_{max}}} \varepsilon
 \end{alignat}
-and also $\varepsilon \ge 0$. The $\mathbf{\hat{X}}$ vector gathers the state estimates over the window. The $\mathbf{C}$ vectors are non-negative values that specify the softness of the associated bound, and $C$ globally weights the slack $\varepsilon$ (equal concern for relaxation). The problem \eqref{eq:J_MHE} is treated as a quadratic program for \texttt{LinModel}, and a nonlinear optimization, for \texttt{NonLinModel}.
+and also $\varepsilon \ge 0$. The $\mathbf{\hat{X}}$ vector gathers the state estimates over the window. The $\mathbf{C}$ vectors are non-negative values that specify the softness of the associated bound, and $C$ globally weights the slack $\varepsilon$ (equal concern for relaxation). The problem \eqref{eq:J_MHE} is treated as a quadratic program for \texttt{LinModel}, and a nonlinear optimization, for \texttt{NonLinModel}. The optimal estimation problem is hard-coded as a single shooting formulation for now, but other transcription methods are planned for future releases.
 
 \paragraph{\textnormal{\texttt{InternalModel}}}
 Allows predictive control designs based on an internal model structure. It is based on the general approach of \citet{globPC}. The stochastic model of the unmeasured disturbances defaults to integrating white noise for each measured output (customizable). This is the equivalent of assuming that the disturbances are constant over the prediction horizon, similarly to dynamic matrix control (DMC). It supports asymptotically stable \texttt{LinModel} or \texttt{NonLinModel}.
+
+\paragraph{\textnormal{\texttt{ManualEstimator}}}
+Special subtype to disable the built-in state estimator and provide a custom feedback strategy.
 
 \subsection{Predictive Controllers}
 
@@ -98,21 +109,26 @@ The problem is subject to the following constraints:
 \begin{alignat}{3}
     \mathbf{U_{min}  - C_{u_{min}}}  \epsilon 
          &\le \mathbf{U}  
-        &&\le \mathbf{U_{max}  + C_{u_{max}}}  \epsilon \\
+        &&\le \mathbf{U_{max}  + C_{u_{max}}}  \epsilon \label{eq:u_constraints} \\
     \mathbf{\Delta U_{min} - C_{\Delta u_{min}}} \epsilon 
          &\le \mathbf{\Delta U} 
         &&\le \mathbf{\Delta U_{max} + C_{\Delta u_{max}}} \epsilon \\
     \mathbf{Y_{min}  - C_{y_{min}}}  \epsilon 
          &\le \mathbf{\hat{Y}} 
-        &&\le \mathbf{Y_{max}  + C_{y_{max}}}  \epsilon
+        &&\le \mathbf{Y_{max}  + C_{y_{max}}}  \epsilon \\
+    \mathbf{W_{min}  - C_{w_{min}}}  \epsilon 
+         &\le \mathbf{W} 
+        &&\le \mathbf{W_{max}  + C_{w_{max}}}  \epsilon \label{eq:w_constraints}
 \end{alignat}
-and also $\epsilon \ge 0$. Box constraints on the terminal states are also possible: 
+and also $\epsilon \ge 0$. The last line is for the custom linear inequality constraints. The vector $\mathbf{W}$ is defined as a linear combination of the inputs, outputs and setpoints. Box constraints on the terminal states are also possible: 
 \begin{equation}
-\mathbf{\hat{x}_{min}} {-} \mathbf{c_{\hat{x}_{min}}}\epsilon \le \mathbf{\hat{x}}_{i}(k{+}H_p) \le \mathbf{\hat{x}_{max}} + \mathbf{c_{\hat{x}_{max}}}\epsilon
+\mathbf{\hat{x}_{min}} - \mathbf{c_{\hat{x}_{min}}}\epsilon \le \mathbf{\hat{x}}_{i}(k+H_p) \le \mathbf{\hat{x}_{max}} + \mathbf{c_{\hat{x}_{max}}}\epsilon
 \end{equation}
-in which $i=k$ when using current estimators, and $i=k-1$ for delayed formulations. Note that changing the bounds at runtime and time-varying constraints over the horizons are supported.
+in which $i=k$ when using current estimators, and $i=k-1$ for delayed formulations. Note that time-varying constraints over the horizons and changing the bounds at runtime are supported (but not in the C codegen features).
 
-The default optimizer is \texttt{OSQP.jl} that efficiently handles sparse problems \citep{osqp}, but the interface based on \texttt{JuMP.jl} allows switching among many quadratic solvers. For example, the dual active-set method of \citet{daqp} is sometimes more efficient on small and dense matrices. Testing this solver only takes 2 lines of code (see \cref{sec:successive_linearization} for an example).
+The default optimizer is \texttt{OSQP.jl} that efficiently handles sparse problems \citep{osqp}, but the interface based on \texttt{JuMP.jl} allows switching among many quadratic solvers. For example, the dual active-set method of \citet{daqp} is sometimes more efficient on small and dense matrices. Testing this solver only takes 2 lines of code (see \cref{sec:successive_linearization} for an example). 
+
+The user has the choice between a single shooting or a multiple shooting approach to transcribe the optimal control problem, which is also known as a condensed or sparse formulation, respectively. Move blocking with custom patterns for the manipulated inputs is also available to reduce the number of decision variables on long horizons. This object can be converted to a controller from \texttt{LinearMPC.jl} package for C code generation, but note that the solver and transcription is limited to the approach of \citet{daqp}.
 
 \paragraph{\textnormal{\texttt{ExplicitMPC}}}
 Linear model predictive controller without constraints, see \texttt{LinMPC} for the cost function. The computational costs are extremely low (the analytical solution of the quadratic problem leads to a single array division), therefore suitable for applications that require small sample times. It produces a control law similar to a finite-horizon linear-quadratic regulator (LQR), but with the control horizon $H_c$, the move suppression $\mathbf{N}_{H_c}$ and the input setpoint tracking $\mathbf{L}_{H_p}$ weights available as additional tuning parameters.
@@ -121,21 +137,27 @@ Linear model predictive controller without constraints, see \texttt{LinMPC} for 
 Nonlinear model predictive controller under constraints. The objective function includes an additional term for economic MPC:
 \begin{equation}\label{eq:J_NMPC}
 J_{\mathit{NMPC}} = J_{\mathit{MPC}} 
-    + E J_E\big(\mathbf{U}_E, \mathbf{\hat{Y}}_E, \mathbf{\hat{D}}_E, \mathbf{p}\big)
+    + E J_E\big(\mathbf{U_e}, \mathbf{\hat{Y}_e}, \mathbf{\hat{D}_e}, \mathbf{p}, \epsilon \big)
 \end{equation}
-with $J_{\mathit{MPC}}$ from \eqref{eq:J_MPC}. The user provides a custom function $J_E$ that returns the economic costs for a given set of inputs $\mathbf{U}_E$, outputs $\mathbf{\hat{Y}}_E$ and measured disturbances $\mathbf{\hat{D}}_E$:
+subject to the bound constraints \eqref{eq:u_constraints}--\eqref{eq:w_constraints} and the custom nonlinear inequality constraints:
 \begin{equation}
-\mathbf{U}_E = 
+\mathbf{g_c}\big(\mathbf{U_e}, \mathbf{\hat{Y}_e}, \mathbf{\hat{D}_e}, \mathbf{p}, \epsilon \big) \le \mathbf{0}
+\end{equation}
+with $J_{\mathit{MPC}}$ from \eqref{eq:J_MPC}. The user provides custom functions $J_E$ and $\mathbf{g_c}$ that returns the economic costs and the constraint values for a given set of inputs $\mathbf{U_e}$, outputs $\mathbf{\hat{Y}_e}$ and measured disturbances $\mathbf{\hat{D}_e}$, extended from $k$ to $k+H_p$ inclusively, as follows:
+\begin{equation}
+\mathbf{U_e} = 
 \begin{bmatrix}
     \mathbf{U} \\ \mathbf{u}(k+H_p-1)
-\end{bmatrix}\!,\,
-\mathbf{\hat{Y}}_E = 
+\end{bmatrix},\,\,
+\mathbf{\hat{Y}_e} = 
 \begin{bmatrix}
     \mathbf{\hat{y}}(k) \\ \mathbf{\hat{Y}}
-\end{bmatrix}\!,\, 
-\mathbf{\hat{D}}_E = 
+\end{bmatrix},\,\,
+\mathbf{\hat{D}_e} = 
 \begin{bmatrix}
     \mathbf{d}(k) \\ \mathbf{\hat{D}}
 \end{bmatrix} 
 \end{equation} 
-The bound constraints are identical to \texttt{LinMPC}. Custom nonlinear inequality constraints based on a user-defined function are not supported for now, but this feature will be added in the next release. The parameter $\mathbf{p}$ includes arbitrary constants for computing the economical costs. The default optimizer is \texttt{Ipopt.jl}, an open-source interior point method developed by \citet{ipopt}.
+The parameter $\mathbf{p}$ includes arbitrary constants for computing the economical costs. 
+
+The default optimizer is \texttt{Ipopt.jl}, an open-source interior point method developed by \citet{ipopt}. The user has the choice between shooting methods, trapezoidal collocation, likewise MATLAB, and orthogonal collocation using either Gauss-Radau or Gauss-Legendre quadrature, similarly to \citet{doMPC, gekko, apmonitor, acados}. The latter is particuliarly efficient on highly stiff dynamics. Except for single shooting, all these approaches are parallel-in-time, thus they all support optional multi-threading, which can be advantageous when the state-space functions are expensive to evaluate.
