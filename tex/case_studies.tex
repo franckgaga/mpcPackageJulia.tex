@@ -231,7 +231,7 @@ UnscentedKalmanFilter estimator with a sample time Ts =
   ├ 0 unmeasured outputs yu
   └ 0 measured disturbances d
 \end{minted}
-The vectors \texttt{σQ} and \texttt{σR} are the standard deviations of the process and sensor noises, respectively. The value for the velocity $\omega$ is higher here (\texttt{σQ} second value) since \eqref{eq.pendulum_speed} includes an uncertain parameter: the friction coefficient $K$. Also, the argument \texttt{nint\_u} explicitly adds one integrating state at the model input, the motor torque $\tau$, with an associated standard deviation \texttt{σQint\_u} of $\SI{0.1}{\newton\meter}$. About this, custom models for the unmeasured disturbances is possible by constructing a \texttt{NonLinModel} with the state-space functions based on the augmented dynamics directly, and by specifying \texttt{nint\_u=0} and \texttt{nint\_ym=0} when constructing the estimator. The estimator tuning is tested on a plant with a \SI{25}{\percent} larger friction coefficient $K$: 
+The vectors \texttt{σQ} and \texttt{σR} are the standard deviations of the process and sensor noises, respectively. The value for the velocity $\omega$ is higher here (\texttt{σQ} second value) since \eqref{eq.pendulum_speed} includes an uncertain parameter: the friction coefficient $K$. Also, the argument \texttt{nint\_u} explicitly adds one integrating state at the model input, the motor torque $\tau$, with an associated standard deviation \texttt{σQint\_u} of $\SI{0.1}{\newton\meter}$. On this subject, custom models for the unmeasured disturbances is also possible by constructing a \texttt{NonLinModel} with the state-space functions based on the augmented dynamics directly, and by specifying \texttt{nint\_u=0} and \texttt{nint\_ym=0} when constructing the estimator. The estimator tuning is tested on a plant with a \SI{25}{\percent} larger friction coefficient $K$: 
 \begin{minted}{julia}
 p_plant = copy(p); p_plant[3] = 1.25*p[3]
 plant = NonLinModel(f!, h!, Ts, nu, nx, ny; p=p_plant)
@@ -279,9 +279,9 @@ NonLinMPC controller with a sample time Ts = 0.1 s:
   ├  0 unmeasured outputs yu
   └  0 measured disturbances d
 \end{minted}
-The keyword arguments \texttt{Mwt} and \texttt{Nwt} are the output setpoint tracking and move suppression weights, respectively. The option \texttt{Cwt=Inf} disables the slack variable $\epsilon$ when not needed. The transcription is set to \texttt{MultipleShooting} to
-ease convergence on the highly nonlinear and unstable pendulum model, but also to reproduce
-MATLAB's internals for nonlinear MPC, which is harded-coded as a multiple shooting.
+The keyword arguments \texttt{Mwt} and \texttt{Nwt} are the output setpoint tracking and move suppression weights, respectively. The option \texttt{Cwt=Inf} disables the slack variable $\epsilon$ when not needed. A \texttt{MultipleShooting} transcribes the optimization problem to ease convergence on the highly nonlinear and unstable pendulum model, but also to reproduce MATLAB's internals for nonlinear MPC, which is harded-coded as a multiple shooting. 
+
+By default, the package \texttt{AutoForwardDiff.jl} computes the gradient and the constraint Jacobians, and the Hessian of the Lagrangian is skipped, thus falling back to the internal quasi-Newton approximation of \texttt{Ipopt.jl}. With non-single-shooting transcriptions, the sparsity of the Jacobian (and Hessian, if enabled) is automatically detected and exploited to reduce the computational burden, thanks to the \texttt{DifferentiationInterface.jl} dependency \citep{differentiationinterface}. Several configurations related to the sparsity pattern are also available, as well as the option to use finite differences, similarly to MATLAB.  
 
 An angular setpoint of \SI{180}{\degree} (inverted position) tests \texttt{mpc} performances on the plant:
 \begin{minted}{julia}
@@ -394,7 +394,7 @@ function calcW(res)
 end
 Dict(:W_nmpc => calcW(res_r), :W_empc => calcW(res2_r))
 \end{minted}
-\spacerepl\vspace{1pt}
+\spacerepl
 \begin{minted}{julia-repl}
 Dict{Symbol, Float64} with 2 entries:
   :W_empc => 3.90053
@@ -418,7 +418,7 @@ plot(res2_d, ploty=[1])
 \begin{minted}{julia}
 Dict(:W_nmpc => calcW(res_d), :W_empc => calcW(res2_d))
 \end{minted}
-\spacerepl
+\spacerepl\vspace{0.6em}
 \begin{minted}{julia-repl}
 Dict{Symbol, Float64} with 2 entries:
   :W_empc => -0.0542454
