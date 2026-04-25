@@ -259,7 +259,7 @@ nmpc = NonLinMPC(estim; Hp, Hc, Mwt,
 umin, umax = [-1.5], [+1.5]
 nmpc = setconstraint!(nmpc; umin, umax)
 \end{minted}
-\spacerepl
+\spacerepl\vspace{0.4em}
 \begin{minted}{julia-repl}
 NonLinMPC controller with a sample time Ts = 0.1 s:
 ├ estimator: UnscentedKalmanFilter
@@ -394,7 +394,7 @@ function calcW(res)
 end
 Dict(:W_nmpc => calcW(res_r), :W_empc => calcW(res2_r))
 \end{minted}
-\spacerepl
+\spacerepl\vspace{0.3em}
 \begin{minted}{julia-repl}
 Dict{Symbol, Float64} with 2 entries:
   :W_empc => 3.90053
@@ -418,7 +418,7 @@ plot(res2_d, ploty=[1])
 \begin{minted}{julia}
 Dict(:W_nmpc => calcW(res_d), :W_empc => calcW(res2_d))
 \end{minted}
-\spacerepl\vspace{0.6em}
+\spacerepl\vspace{0.3em}
 \begin{minted}{julia-repl}
 Dict{Symbol, Float64} with 2 entries:
   :W_empc => -0.0542454

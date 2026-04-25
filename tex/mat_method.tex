@@ -109,7 +109,7 @@ The problem is subject to the following constraints:
 \begin{alignat}{3}
     \mathbf{U_{min}  - C_{u_{min}}}  \epsilon 
          &\le \mathbf{U}  
-        &&\le \mathbf{U_{max}  + C_{u_{max}}}  \epsilon \\
+        &&\le \mathbf{U_{max}  + C_{u_{max}}}  \epsilon \label{eq:u_constraints} \\
     \mathbf{\Delta U_{min} - C_{\Delta u_{min}}} \epsilon 
          &\le \mathbf{\Delta U} 
         &&\le \mathbf{\Delta U_{max} + C_{\Delta u_{max}}} \epsilon \\
@@ -118,7 +118,7 @@ The problem is subject to the following constraints:
         &&\le \mathbf{Y_{max}  + C_{y_{max}}}  \epsilon \\
     \mathbf{W_{min}  - C_{w_{min}}}  \epsilon 
          &\le \mathbf{W} 
-        &&\le \mathbf{W_{max}  + C_{w_{max}}}  \epsilon
+        &&\le \mathbf{W_{max}  + C_{w_{max}}}  \epsilon \label{eq:w_constraints}
 \end{alignat}
 and also $\epsilon \ge 0$. The last line is for the custom linear inequality constraints. The vector $\mathbf{W}$ is defined as a linear combination of the inputs, outputs and setpoints. Box constraints on the terminal states are also possible: 
 \begin{equation}
@@ -139,11 +139,11 @@ Nonlinear model predictive controller under constraints. The objective function 
 J_{\mathit{NMPC}} = J_{\mathit{MPC}} 
     + E J_E\big(\mathbf{U_e}, \mathbf{\hat{Y}_e}, \mathbf{\hat{D}_e}, \mathbf{p}, \epsilon \big)
 \end{equation}
-subject the custom nonlinear inequality constraints:
+subject to the bound constraints \eqref{eq:u_constraints}--\eqref{eq:w_constraints} and the custom nonlinear inequality constraints:
 \begin{equation}
 \mathbf{g_c}\big(\mathbf{U_e}, \mathbf{\hat{Y}_e}, \mathbf{\hat{D}_e}, \mathbf{p}, \epsilon \big) \le \mathbf{0}
 \end{equation}
-with $J_{\mathit{MPC}}$ from \eqref{eq:J_MPC}. The user provides custom functions $J_E$ and $\mathbf{g_c}$ that returns the economic costs and the constraint values for a given set of inputs $\mathbf{U_e}$, outputs $\mathbf{\hat{Y}_e}$ and measured disturbances $\mathbf{\hat{D}_e}$, extended from $k$ to $k+H_p$ inclusively as follows:
+with $J_{\mathit{MPC}}$ from \eqref{eq:J_MPC}. The user provides custom functions $J_E$ and $\mathbf{g_c}$ that returns the economic costs and the constraint values for a given set of inputs $\mathbf{U_e}$, outputs $\mathbf{\hat{Y}_e}$ and measured disturbances $\mathbf{\hat{D}_e}$, extended from $k$ to $k+H_p$ inclusively, as follows:
 \begin{equation}
 \mathbf{U_e} = 
 \begin{bmatrix}
@@ -158,6 +158,6 @@ with $J_{\mathit{MPC}}$ from \eqref{eq:J_MPC}. The user provides custom function
     \mathbf{d}(k) \\ \mathbf{\hat{D}}
 \end{bmatrix} 
 \end{equation} 
-The bound constraints are identical to \texttt{LinMPC}. Custom nonlinear inequality constraints based on a user-defined function are not supported for now, but this feature will be added in the next release. The parameter $\mathbf{p}$ includes arbitrary constants for computing the economical costs. 
+The parameter $\mathbf{p}$ includes arbitrary constants for computing the economical costs. 
 
 The default optimizer is \texttt{Ipopt.jl}, an open-source interior point method developed by \citet{ipopt}. The user has the choice between shooting methods, trapezoidal collocation, likewise MATLAB, and orthogonal collocation using either Gauss-Radau or Gauss-Legendre quadrature, similarly to \citet{doMPC, gekko, apmonitor, acados}. The latter is particuliarly efficient on highly stiff dynamics. Except for single shooting, all these approaches are parallel-in-time, thus they all support optional multi-threading, which can be advantageous when the state-space functions are expensive to evaluate.
