@@ -39,7 +39,7 @@ using Plots; plot(res, plotu=false, plotxwithx̂=true)
 ## =========================================
 ## ========= Plot PDF ======================
 ## =========================================
-using PlotThemes, Plots.PlotMeasures
+using Plots.PlotMeasures
 theme(:default)
 default(fontfamily="Computer Modern");
 plt = plot(res, plotu=false, plotxwithx̂=true, size=(425, 275))
@@ -71,7 +71,7 @@ plot(res_r)
 ## =========================================
 ## ========= Plot PDF ======================
 ## =========================================
-using PlotThemes, Plots.PlotMeasures 
+using Plots.PlotMeasures 
 theme(:default)
 default(fontfamily="Computer Modern")
 plt = plot(res_r, size=(425, 200), bottom_margin=10px)
@@ -135,7 +135,7 @@ plot(res_d)
 ## =========================================
 ## ========= Plot PDF ======================
 ## =========================================
-using PlotThemes, Plots.PlotMeasures
+using Plots.PlotMeasures
 theme(:default)
 default(fontfamily="Computer Modern")
 plt = plot(res_d, size=(425, 200), bottom_margin=10px)
@@ -207,7 +207,7 @@ plot(res2_r, ploty=[1])
 ## =========================================
 ## ========= Plot PDF ======================
 ## =========================================
-using PlotThemes, Plots.PlotMeasures 
+using Plots.PlotMeasures 
 theme(:default)
 default(fontfamily="Computer Modern")
 plt = plot(res2_r, ploty=[1], size=(425, 200), bottom_margin=10px)
@@ -279,7 +279,7 @@ display(Dict(:W_nmpc => calcW(res_d), :W_empc => calcW(res2_d)))
 ## =========================================
 ## ========= Plot PDF ======================
 ## =========================================
-using PlotThemes, Plots.PlotMeasures
+using Plots.PlotMeasures
 theme(:default)
 default(fontfamily="Computer Modern")
 plt = plot(res2_d, ploty=[1], size=(425, 200), bottom_margin=10px)
@@ -358,7 +358,7 @@ plot(res3_r)
 ## =========================================
 ## ========= Plot PDF ======================
 ## =========================================
-using PlotThemes, Plots.PlotMeasures 
+using Plots.PlotMeasures 
 theme(:default)
 default(fontfamily="Computer Modern")
 plt = plot(res3_r, size=(425, 200), bottom_margin=10px)
@@ -388,7 +388,7 @@ plot(res3_d)
 ## =========================================
 ## ========= Plot PDF ======================
 ## =========================================
-using PlotThemes, Plots.PlotMeasures 
+using Plots.PlotMeasures 
 theme(:default)
 default(fontfamily="Computer Modern")
 plt = plot(res3_d, size=(425, 200), bottom_margin=10px)
