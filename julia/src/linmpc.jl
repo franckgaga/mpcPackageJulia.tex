@@ -46,7 +46,7 @@ using Plots; plot(res)
 ## ========= Plot PDF ======================
 ## =========================================
 using Plots.PlotMeasures
-theme(:default)
+
 default(fontfamily="Computer Modern")
 p = plot(res, size=(425, 250), legend=:bottomleft)
 display(p)
@@ -105,7 +105,6 @@ plot(res)
 ## ========= Plot PDF ======================
 ## =========================================
 using Plots.PlotMeasures
-theme(:default)
 default(fontfamily="Computer Modern")
 p = plot(res, size=(425, 250), legend=:bottomleft)
 display(p)
