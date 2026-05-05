@@ -279,7 +279,7 @@ NonLinMPC controller with a sample time Ts = 0.1 s:
   ├  0 unmeasured outputs yu
   └  0 measured disturbances d
 \end{minted}
-The keyword arguments \texttt{Mwt} and \texttt{Nwt} are the output setpoint tracking and move suppression weights, respectively. The option \texttt{Cwt=Inf} disables the slack variable $\epsilon$ when not needed. Here, a \texttt{MultipleShooting} method transcribes the optimization problem to ease convergence on the highly nonlinear and unstable pendulum model, but also to reproduce MATLAB's internals for nonlinear MPC, which is harded-coded as a multiple shooting. 
+The keyword arguments \texttt{Mwt} and \texttt{Nwt} are the output setpoint tracking and move suppression weights, respectively. The option \texttt{Cwt=Inf} disables the slack variable $\epsilon$ when not needed. Here, a \texttt{MultipleShooting} method transcribes the optimization problem to ease convergence on the highly nonlinear and unstable pendulum model, but also to reproduce MATLAB's internals for nonlinear MPC, which is hard-coded as a multiple shooting. 
 
 By default, the package \texttt{ForwardDiff.jl} computes the gradient and the constraint Jacobians, and the Hessian of the Lagrangian is skipped, thus falling back to the internal quasi-Newton approximation of \texttt{Ipopt.jl}. With non-single-shooting transcriptions, the sparsity of the Jacobian (and Hessian, if enabled) is automatically detected and exploited to reduce the computational burden, thanks to the \texttt{DifferentiationInterface.jl} dependency \citep{differentiationinterface}. Several configurations related to the sparsity pattern are also available, as well as the option to use finite differences, similarly to MATLAB.  
 
