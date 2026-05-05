@@ -279,9 +279,9 @@ NonLinMPC controller with a sample time Ts = 0.1 s:
   ├  0 unmeasured outputs yu
   └  0 measured disturbances d
 \end{minted}
-The keyword arguments \texttt{Mwt} and \texttt{Nwt} are the output setpoint tracking and move suppression weights, respectively. The option \texttt{Cwt=Inf} disables the slack variable $\epsilon$ when not needed. Here, a \texttt{MultipleShooting} method transcribes the optimization problem to ease convergence on the highly nonlinear and unstable pendulum model, but also to reproduce MATLAB's internals for nonlinear MPC, which is harded-coded as a multiple shooting. 
+The keyword arguments \texttt{Mwt} and \texttt{Nwt} are the output setpoint tracking and move suppression weights, respectively. The option \texttt{Cwt=Inf} disables the slack variable $\epsilon$ when not needed. Here, a \texttt{MultipleShooting} method transcribes the optimization problem to ease convergence on the highly nonlinear and unstable pendulum model, but also to reproduce MATLAB's internals for nonlinear MPC, which is hard-coded as a multiple shooting. 
 
-By default, the package \texttt{AutoForwardDiff.jl} computes the gradient and the constraint Jacobians, and the Hessian of the Lagrangian is skipped, thus falling back to the internal quasi-Newton approximation of \texttt{Ipopt.jl}. With non-single-shooting transcriptions, the sparsity of the Jacobian (and Hessian, if enabled) is automatically detected and exploited to reduce the computational burden, thanks to the \texttt{DifferentiationInterface.jl} dependency \citep{differentiationinterface}. Several configurations related to the sparsity pattern are also available, as well as the option to use finite differences, similarly to MATLAB.  
+By default, the package \texttt{ForwardDiff.jl} computes the gradient and the constraint Jacobians, and the Hessian of the Lagrangian is skipped, thus falling back to the internal quasi-Newton approximation of \texttt{Ipopt.jl}. With non-single-shooting transcriptions, the sparsity of the Jacobian (and Hessian, if enabled) is automatically detected and exploited to reduce the computational burden, thanks to the \texttt{DifferentiationInterface.jl} dependency \citep{differentiationinterface}. Several configurations related to the sparsity pattern are also available, as well as the option to use finite differences, similarly to MATLAB.  
 
 An angular setpoint of \SI{180}{\degree} (inverted position) tests \texttt{mpc} performances on the plant:
 \begin{minted}{julia}
@@ -315,7 +315,7 @@ The next section presents an economic model predictive controller on the pendulu
 
 \subsubsection{Economic model predictive control (EMPC)}
 
-For this case study, the controller will aim to reduce the energy consumed by the motor. The power in watt transmitted by the motor to the pendulum is:
+For this case study, the controller will aim to reduce the energy consumed by the motor. The power in watts transmitted by the motor to the pendulum is:
 \begin{equation}
 P(t) = \tau(t) \omega(t) 
 \end{equation}
@@ -323,7 +323,7 @@ Thus, the work in joule done by the motor from $t_0$ to $t_{end}$ is:
 \begin{equation}
 W = \int_{t_0}^{t_{end}} P(t) \mathrm{d}t 
 \end{equation}
-With the sampling time $T_s$ in second and the prediction horizon $H_p$ in time steps, computing the integral with the left-endpoint rectangle method and defining the limits as $t_0=k T_s$ and $t_{end} = (k + H_p) T_s$ give:
+With the sampling time $T_s$ in seconds and the prediction horizon $H_p$ in time steps, computing the integral with the left-endpoint rectangle method and defining the limits as $t_0=k T_s$ and $t_{end} = (k + H_p) T_s$ give:
 \begin{equation}\label{eq:pendulum_W}
 W \approx T_s \sum_{j = 0}^{H_p - 1} \tau(k+j) \omega(k+j) 
 \end{equation}
