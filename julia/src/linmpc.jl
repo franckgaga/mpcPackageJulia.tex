@@ -59,7 +59,7 @@ using BenchmarkTools
 using JuMP, OSQP, DAQP
 
 if run_benchmarks
-    optim = JuMP.Model(OSQP.Optimizer, add_bridges=false)
+    optim = JuMP.Model(OSQP.Optimizer, add_bridges=true)
     mpc_osqp = setconstraint!(LinMPC(model; optim), ymin=[45, -Inf])
     JuMP.unset_time_limit_sec(mpc_osqp.optim)
     bm = @benchmark test_mpc($mpc_osqp, $model) samples=500
@@ -118,7 +118,7 @@ using BenchmarkTools
 using JuMP, OSQP, DAQP
 
 if run_benchmarks
-    optim = JuMP.Model(OSQP.Optimizer, add_bridges=false)
+    optim = JuMP.Model(OSQP.Optimizer, add_bridges=true)
     mpc_d_osqp = setconstraint!(LinMPC(model_d; optim), ymin=[45, -Inf])
     JuMP.unset_time_limit_sec(mpc_d_osqp.optim)
     bm = @benchmark test_mpc_d($mpc_d_osqp, $model) samples=500
